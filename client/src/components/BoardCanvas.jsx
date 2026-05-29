@@ -1,0 +1,144 @@
+import { useEffect, useRef, useState } from 'react'
+import { Stage, Layer } from 'react-konva'
+import Field from './Field'
+import Player from './Player'
+import Disc from './Disc'
+import FrameBar from './FrameBar'
+import { useBoardStore } from '../store/boardStore'
+import { saveBoard } from '../api/boards'
+
+const FIELD_ASPECT = 100 / 37
+const PADDING = 40
+
+function useFieldSize(containerRef) {
+  const [size, setSize] = useState({
+    stageW: 800, stageH: 400,
+    fieldW: 720, fieldH: 266,
+    fieldX: 40, fieldY: 67,
+  })
+
+  useEffect(() => {
+    function compute() {
+      if (!containerRef.current) return
+      const { clientWidth: cw, clientHeight: ch } = containerRef.current
+      const availW = cw - PADDING * 2
+      const availH = ch - PADDING * 2
+      let fieldW, fieldH
+      if (availW / availH > FIELD_ASPECT) {
+        fieldH = availH; fieldW = fieldH * FIELD_ASPECT
+      } else {
+        fieldW = availW; fieldH = fieldW / FIELD_ASPECT
+      }
+      setSize({
+        stageW: cw, stageH: ch,
+        fieldW, fieldH,
+        fieldX: (cw - fieldW) / 2,
+        fieldY: (ch - fieldH) / 2,
+      })
+    }
+    compute()
+    const ro = new ResizeObserver(compute)
+    ro.observe(containerRef.current)
+    return () => ro.disconnect()
+  }, [containerRef])
+
+  return size
+}
+
+export default function BoardCanvas() {
+  const containerRef = useRef(null)
+  const { stageW, stageH, fieldW, fieldH, fieldX, fieldY } = useFieldSize(containerRef)
+  const {
+    board, currentFrameIndex, isDirty,
+    updateFramePlayerState, updateFrameDiscState,
+    addFrame, removeFrame, setCurrentFrame, markClean,
+  } = useBoardStore()
+
+  // Auto-save 1 second after any dirty change
+  useEffect(() => {
+    if (!isDirty || !board) return
+    const timer = setTimeout(async () => {
+      await saveBoard(board.id, { data: board.data })
+      markClean()
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [isDirty, board])
+
+  if (!board) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
+        加载中…
+      </div>
+    )
+  }
+
+  const currentFrame = board.data.frames[currentFrameIndex]
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* 顶栏 */}
+      <div style={{
+        padding: '8px 16px', background: '#111',
+        borderBottom: '1px solid #333',
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <span style={{ fontWeight: 'bold', fontSize: 16 }}>{board.name}</span>
+        {isDirty && <span style={{ fontSize: 12, color: '#888' }}>保存中…</span>}
+      </div>
+
+      {/* 画布 */}
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <Stage width={stageW} height={stageH} style={{ background: '#0d0d1a' }}>
+          <Layer x={fieldX} y={fieldY}>
+            <Field fieldWidth={fieldW} fieldHeight={fieldH} />
+          </Layer>
+          <Layer x={fieldX} y={fieldY}>
+            {board.data.players.map(player => {
+              const state = currentFrame.playerStates[player.id]
+              if (!state) return null
+              return (
+                <Player
+                  key={player.id}
+                  player={player}
+                  playerState={state}
+                  fieldWidth={fieldW}
+                  fieldHeight={fieldH}
+                  onDragEnd={(id, newState) =>
+                    updateFramePlayerState(currentFrameIndex, id, newState)
+                  }
+                  onDoubleClick={(id) => {
+                    const p = board.data.players.find(pl => pl.id === id)
+                    const newName = prompt(
+                      `重命名球员 ${p.number}（当前: ${p.name}）`,
+                      p.name
+                    )
+                    if (newName !== null && newName.trim()) {
+                      useBoardStore.getState().renamePlayer(id, newName.trim())
+                    }
+                  }}
+                />
+              )
+            })}
+            <Disc
+              discState={currentFrame.discState}
+              fieldWidth={fieldW}
+              fieldHeight={fieldH}
+              onDragEnd={(newState) =>
+                updateFrameDiscState(currentFrameIndex, newState)
+              }
+            />
+          </Layer>
+        </Stage>
+      </div>
+
+      {/* 帧选择器 */}
+      <FrameBar
+        frames={board.data.frames}
+        currentFrameIndex={currentFrameIndex}
+        onSelectFrame={setCurrentFrame}
+        onAddFrame={addFrame}
+        onRemoveFrame={removeFrame}
+      />
+    </div>
+  )
+}
