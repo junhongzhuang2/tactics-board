@@ -304,18 +304,20 @@ git commit -m "feat: getEditableFrameIndex edit-gate helper"
 
 ---
 
-## Task 4: 播放头推进纯函数 `advancePlayhead`
+## Task 4: 播放头推进 + 拖拽时长映射纯函数 `advancePlayhead` / `durationFromDrag`
 
 **Files:**
 - Modify: `client/src/utils/interpolate.js`
 - Test: `client/src/utils/interpolate.test.js`
+
+> `durationFromDrag` 是「拖了多少像素 → 时长变多少毫秒」的纯映射，可稳定单测；真正的鼠标拖拽接线在 Task 7 实现并由人工浏览器验证（不写脆弱的指针自动化测试）。
 
 - [ ] **Step 1: Write the failing test**
 
 在 `client/src/utils/interpolate.test.js` 末尾追加：
 
 ```js
-import { advancePlayhead } from './interpolate'
+import { advancePlayhead, durationFromDrag } from './interpolate'
 
 test('advancePlayhead advances within range', () => {
   expect(advancePlayhead(100, 50, 1000, false)).toEqual({ next: 150, stop: false })
@@ -333,6 +335,21 @@ test('advancePlayhead wraps around when looping', () => {
 
 test('advancePlayhead with zero total stays at 0', () => {
   expect(advancePlayhead(0, 50, 0, true)).toEqual({ next: 0, stop: false })
+})
+
+test('durationFromDrag adds pixel delta scaled by msPerPx', () => {
+  // 往右拖 20px，每像素 10ms => +200ms
+  expect(durationFromDrag(1000, 20, 10)).toBe(1200)
+  // 往左拖
+  expect(durationFromDrag(1000, -30, 10)).toBe(700)
+})
+
+test('durationFromDrag floors at minimum 100ms', () => {
+  expect(durationFromDrag(200, -50, 10)).toBe(100) // 200-500 -> floor 100
+})
+
+test('durationFromDrag rounds to integer ms', () => {
+  expect(durationFromDrag(1000, 3, 3.33)).toBe(1010) // 1000 + 9.99 -> 1010
 })
 ```
 
@@ -356,6 +373,11 @@ export function advancePlayhead(playheadTime, dt, total, loop) {
   }
   return { next, stop: false }
 }
+
+// 拖帧块右边缘改时长：起始时长 + 像素位移×每像素毫秒，floor 到最小值
+export function durationFromDrag(startDuration, deltaPx, msPerPx, minDuration = 100) {
+  return Math.max(minDuration, Math.round(startDuration + deltaPx * msPerPx))
+}
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -367,7 +389,7 @@ Expected: PASS（interpolate.test.js 全部通过）。
 
 ```bash
 git add client/src/utils/interpolate.js client/src/utils/interpolate.test.js
-git commit -m "feat: advancePlayhead playback-advance pure function"
+git commit -m "feat: advancePlayhead and durationFromDrag pure functions"
 ```
 
 ---
@@ -774,9 +796,10 @@ Expected: FAIL，找不到 `./Timeline` 模块。
 
 ```js
 import { useRef } from 'react'
-import { frameStartTimes, totalDuration } from '../utils/interpolate'
+import { frameStartTimes, totalDuration, durationFromDrag } from '../utils/interpolate'
 
 const MIN_BLOCK_PX = 44
+const HANDLE_PX = 6
 
 const STYLES = {
   bar: {
@@ -794,7 +817,7 @@ const STYLES = {
     display: 'flex', gap: 2, overflow: 'hidden',
   },
   frame: (active) => ({
-    height: 36, borderRadius: 6,
+    position: 'relative', height: 36, borderRadius: 6,
     background: active ? '#4a9eff' : '#2a2a3e',
     border: active ? '2px solid #4a9eff' : '2px solid #444',
     color: '#fff', cursor: 'pointer', fontSize: 13,
@@ -808,6 +831,11 @@ const STYLES = {
   durInput: {
     width: 56, height: 30, borderRadius: 6, textAlign: 'center',
     background: '#1a1a2e', border: '1px solid #555', color: '#fff',
+  },
+  handle: {
+    position: 'absolute', top: 0, right: 0, bottom: 0, width: HANDLE_PX,
+    cursor: 'ew-resize', background: 'rgba(255,255,255,0.25)',
+    borderTopRightRadius: 6, borderBottomRightRadius: 6,
   },
 }
 
@@ -846,6 +874,25 @@ export default function Timeline({
     onSetPlayhead(Math.max(0, Math.min(total, pct * total)))
   }
 
+  // 拖帧块右边缘改时长：用 track 像素宽与总时长换算 msPerPx，纯映射由 durationFromDrag 完成
+  function handleResizeStart(e, i) {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startDuration = frames[i].duration
+    const trackPx = trackRef.current ? trackRef.current.getBoundingClientRect().width : 1
+    const msPerPx = total > 0 ? total / trackPx : 1
+    function onMove(ev) {
+      onSetDuration(i, durationFromDrag(startDuration, ev.clientX - startX, msPerPx))
+    }
+    function onUp() {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
   const curDurSec = (frames[currentFrameIndex]?.duration ?? 0) / 1000
 
   return (
@@ -876,6 +923,15 @@ export default function Timeline({
             title={frames.length > 1 ? '右键删除此帧' : ''}
           >
             {i + 1}
+            {/* 非最后一帧才有边缘把手（最后一帧 duration 无效） */}
+            {i < frames.length - 1 && (
+              <div
+                style={STYLES.handle}
+                onMouseDown={(e) => handleResizeStart(e, i)}
+                onClick={(e) => e.stopPropagation()}
+                title="拖动改变本帧时长"
+              />
+            )}
           </div>
         ))}
         <div style={STYLES.playhead(playheadPct)} />
@@ -899,6 +955,7 @@ export default function Timeline({
 ```
 
 > 注：测试用 `fireEvent.change` 后 `blur`；`onBlur` 读取最新值并换算成毫秒提交。`key` 含 duration 保证父层更新时输入框重置为新值。
+> 边缘把手（`handleResizeStart`）的鼠标拖拽几何**不写自动化测试**——纯映射 `durationFromDrag` 已在 Task 4 单测；拖拽接线由 Task 9 的人工浏览器冒烟验证。
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1152,8 +1209,11 @@ Run: 启动 `cd client && npm run dev`，另开终端启动后端，浏览器打
 - 拖动播放头到中间：球员停在中途，顶栏显示"预览中"，此时拖不动球员
 - 点第一个帧块：跳回起点，可再次编辑
 - 打开🔁后播放：到末尾回绕循环；关闭后播完停在最后一帧
-- 拖一个帧块越宽（duration 越大）播放越慢；改时长输入框数值生效
+- 拖某帧块**右边缘把手**：该帧变宽/变窄，时长随之改变，播放时该段变慢/变快（验证 durationFromDrag 接线）
+- 改时长输入框数值：当前帧时长生效
 - 右键中间帧块：删除该帧
+
+> 把这些项的结果反馈给我（尤其是边缘把手拖拽的手感与方向是否正确），我据此微调。
 
 - [ ] **Step 5: Commit**
 
@@ -1171,7 +1231,7 @@ git commit -m "feat: wire animation playback into BoardCanvas, replace FrameBar 
 - 2.2 点击帧块跳转 / 拖播放头 scrub → Task 7（onJumpToFrame / handleTrackClick→onSetPlayhead）✅
 - 2.3 ⏮⏭ 步进 → Task 7 + Task 9（handleStep）✅
 - 2.4 可编辑判定 → Task 3（getEditableFrameIndex）+ Task 9（editable 控制 draggable 与写入 editableIndex）✅
-- 2.5 时长编辑（数字输入框）→ Task 7（durInput → onSetDuration）✅；拖帧块右边缘 → 见下方「已知简化」
+- 2.5 时长编辑两种并存 → Task 7：数字输入框（durInput → onSetDuration）+ 拖帧块右边缘（handleResizeStart → durationFromDrag → onSetDuration）✅；纯映射 Task 4 单测，拖拽接线 Task 9 人工验证
 - 2.6 循环开关默认关 → Task 5（loop:false 初始 + toggleLoop）+ Task 7（🔁 按钮）+ Task 6（advancePlayhead loop 分支）✅
 - 2.7 ＋ 在选中帧后插入 / 右键删帧 → Task 5（insertFrameAfter）+ Task 7（onInsertAfter / onRemoveFrame）✅
 - 3.1 interpolateAt 派生渲染 → Task 2 + Task 9 ✅
@@ -1183,6 +1243,6 @@ git commit -m "feat: wire animation playback into BoardCanvas, replace FrameBar 
 
 **3. Type consistency：** `interpolateAt`/`getEditableFrameIndex`/`advancePlayhead`/`frameStartTimes`/`totalDuration` 命名在 Task 1-4 定义、Task 5/6/9 调用一致；store 动作名 `insertFrameAfter/setFrameDuration/play/pause/toggleLoop/setPlayhead` 在 Task 5 定义、Task 9 调用一致；Timeline props 名在 Task 7 定义、Task 9 传入一致。
 
-**已知简化（不阻塞本 Sub-block，记入待办）：**
-- **拖帧块右边缘改时长**未实现，仅保留数字输入框。设计 2.5 要求两者并存——拖边缘涉及 pointer 拖拽几何，jsdom 难以可靠测试，且数字输入已覆盖核心需求。**建议**：作为本 Sub-block 收尾后的小增强单独加，或在用户实际使用后按需补。执行到 Task 7 时若需要，可追加一个 onMouseDown 边缘把手 + clientX→duration 映射。
+**已知简化（不阻塞本 Sub-block）：**
 - **播放头拖动（drag scrub）** 当前以「点击 track 定位」(handleTrackClick) 实现连续定位；逐像素拖动可后续增强为 mousedown/move/up。点击定位已能 scrub 到任意位置。
+- **拖边缘 / 边缘把手** 的鼠标拖拽接线由人工浏览器验证（Task 9 Step 4），纯映射逻辑已单测。这是「能测的测、难测的人工验」的标准取舍，不写脆弱的指针自动化测试。
