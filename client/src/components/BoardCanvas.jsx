@@ -4,10 +4,12 @@ import Field from './Field'
 import Player from './Player'
 import Disc from './Disc'
 import Timeline from './Timeline'
+import UndoRedoButtons from './UndoRedoButtons'
 import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
 import { interpolateAt, getEditableFrameIndex } from '../utils/interpolate'
 import { saveBoard } from '../api/boards'
+import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
 
 const FIELD_ASPECT = 100 / 37
 const PADDING = 40
@@ -53,12 +55,25 @@ export default function BoardCanvas() {
   const { stageW, stageH, fieldW, fieldH, fieldX, fieldY } = useFieldSize(containerRef)
   const {
     board, currentFrameIndex, isDirty, playheadTime, isPlaying, loop,
+    past, future, undo, redo,
     updateFramePlayerState, updateFrameDiscState,
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
   } = useBoardStore()
 
   usePlaybackEngine()
+
+  // 撤销/重做快捷键；焦点在输入框时放行给浏览器原生文本撤销
+  useEffect(() => {
+    function onKeyDown(e) {
+      const tag = e.target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (isUndoShortcut(e)) { e.preventDefault(); undo() }
+      else if (isRedoShortcut(e)) { e.preventDefault(); redo() }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undo, redo])
 
   // Auto-save 1 second after any dirty change
   useEffect(() => {
@@ -90,6 +105,14 @@ export default function BoardCanvas() {
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <span style={{ fontWeight: 'bold', fontSize: 16 }}>{board?.name ?? '加载中…'}</span>
+        {board && (
+          <UndoRedoButtons
+            canUndo={past.length > 0}
+            canRedo={future.length > 0}
+            onUndo={undo}
+            onRedo={redo}
+          />
+        )}
         {isDirty && <span style={{ fontSize: 12, color: '#888' }}>保存中…</span>}
         {!editable && board && <span style={{ fontSize: 12, color: '#f5c518' }}>预览中（停在关键帧才能编辑）</span>}
       </div>
