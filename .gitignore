@@ -22,5 +22,8 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code settings
+.claude/
+
 # Superpowers brainstorm sessions (local only)
 .superpowers/
