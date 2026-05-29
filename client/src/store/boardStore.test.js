@@ -111,6 +111,7 @@ test('insertFrameAfter inserts a copy after the given index', () => {
   // 新帧复制 index 0 的状态，插在 index 1
   expect(result.current.board.data.frames[1].playerStates.r1.x).toBe(0.1)
   expect(result.current.currentFrameIndex).toBe(1)
+  expect(result.current.playheadTime).toBe(1000) // 新帧起点 = frame 0 duration
   expect(result.current.isDirty).toBe(true)
 })
 
