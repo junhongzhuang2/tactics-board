@@ -135,10 +135,42 @@ test('setFrameDuration updates a frame duration with floor', () => {
 
 test('play / pause toggle isPlaying', () => {
   const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({ id: 'frame-1', duration: 500, playerStates: {}, discState: { x: 0.5, y: 0.5 }, annotations: [] })
+  act(() => result.current.setBoard(board))
   act(() => result.current.play())
   expect(result.current.isPlaying).toBe(true)
   act(() => result.current.pause())
   expect(result.current.isPlaying).toBe(false)
+})
+
+test('play does nothing on a single-frame board (total duration 0)', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard())) // 1 frame
+  act(() => result.current.play())
+  expect(result.current.isPlaying).toBe(false)
+})
+
+test('play rewinds to 0 when parked at end and not looping', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({ id: 'frame-1', duration: 500, playerStates: {}, discState: { x: 0.5, y: 0.5 }, annotations: [] })
+  act(() => result.current.setBoard(board))
+  act(() => result.current.setPlayhead(1000)) // total = 1000 (frame0 dur), at end
+  act(() => result.current.play())
+  expect(result.current.isPlaying).toBe(true)
+  expect(result.current.playheadTime).toBe(0)
+})
+
+test('play keeps playhead at end when looping', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({ id: 'frame-1', duration: 500, playerStates: {}, discState: { x: 0.5, y: 0.5 }, annotations: [] })
+  act(() => result.current.setBoard(board))
+  act(() => result.current.toggleLoop()) // loop on
+  act(() => result.current.setPlayhead(1000))
+  act(() => result.current.play())
+  expect(result.current.playheadTime).toBe(1000)
 })
 
 test('toggleLoop flips loop', () => {

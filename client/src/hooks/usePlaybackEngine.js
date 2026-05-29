@@ -20,6 +20,7 @@ export function usePlaybackEngine() {
       lastRef.current = now
 
       const total = totalDuration(board.data.frames)
+      if (total <= 0) { pause(); rafRef.current = null; return }
       const { next, stop } = advancePlayhead(playheadTime, dt, total, loop)
       setPlayhead(next)
       if (stop) {

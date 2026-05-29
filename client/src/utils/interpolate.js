@@ -88,6 +88,19 @@ export function advancePlayhead(playheadTime, dt, total, loop) {
   return { next, stop: false }
 }
 
+// 播放头当前所处的帧段索引（用于时间轴高亮，区别于"可编辑帧"）
+export function activeFrameIndex(frames, playheadTime) {
+  if (frames.length <= 1) return 0
+  const total = totalDuration(frames)
+  if (playheadTime >= total) return frames.length - 1
+  if (playheadTime <= 0) return 0
+  const starts = frameStartTimes(frames)
+  for (let k = 0; k < frames.length - 1; k++) {
+    if (playheadTime >= starts[k] && playheadTime < starts[k + 1]) return k
+  }
+  return frames.length - 1
+}
+
 // 拖帧块右边缘改时长：起始时长 + 像素位移×每像素毫秒，floor 到最小值
 export function durationFromDrag(startDuration, deltaPx, msPerPx, minDuration = 100) {
   return Math.max(minDuration, Math.round(startDuration + deltaPx * msPerPx))

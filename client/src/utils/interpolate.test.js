@@ -84,6 +84,28 @@ test('getEditableFrameIndex returns -1 while playing', () => {
   expect(getEditableFrameIndex(efFrames, 0, true)).toBe(-1)
 })
 
+import { activeFrameIndex } from './interpolate'
+
+const afFrames = [
+  { id: 'f0', duration: 1000, playerStates: {}, discState: { x: 0, y: 0 } },
+  { id: 'f1', duration: 500, playerStates: {}, discState: { x: 0, y: 0 } },
+  { id: 'f2', duration: 0, playerStates: {}, discState: { x: 0, y: 0 } },
+]
+// frameStartTimes = [0, 1000, 1500]; total = 1500
+
+test('activeFrameIndex returns segment index for the playhead', () => {
+  expect(activeFrameIndex(afFrames, 0)).toBe(0)
+  expect(activeFrameIndex(afFrames, 500)).toBe(0)   // within seg 0
+  expect(activeFrameIndex(afFrames, 1000)).toBe(1)  // start of f1
+  expect(activeFrameIndex(afFrames, 1200)).toBe(1)
+  expect(activeFrameIndex(afFrames, 1500)).toBe(2)  // at total -> last
+  expect(activeFrameIndex(afFrames, 99999)).toBe(2)
+})
+
+test('activeFrameIndex returns 0 for single frame', () => {
+  expect(activeFrameIndex([afFrames[0]], 0)).toBe(0)
+})
+
 import { advancePlayhead, durationFromDrag } from './interpolate'
 
 test('advancePlayhead advances within range', () => {

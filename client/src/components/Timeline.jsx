@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { totalDuration, durationFromDrag } from '../utils/interpolate'
+import { totalDuration, durationFromDrag, activeFrameIndex } from '../utils/interpolate'
 
 const MIN_BLOCK_PX = 44
 const HANDLE_PX = 6
@@ -30,6 +30,7 @@ const STYLES = {
   playhead: (leftPct) => ({
     position: 'absolute', top: 0, bottom: 0, left: `${leftPct}%`,
     width: 2, background: '#ff5252', pointerEvents: 'none',
+    transform: 'translateX(-1px)',
   }),
   durInput: {
     width: 56, height: 30, borderRadius: 6, textAlign: 'center',
@@ -61,11 +62,12 @@ export default function Timeline({
   const trackRef = useRef(null)
   const total = totalDuration(frames)
   const playheadPct = total > 0 ? Math.min(100, (playheadTime / total) * 100) : 0
+  const activeIndex = activeFrameIndex(frames, playheadTime)
 
   // Frame block width proportional to duration
   function blockFlex(i) {
     if (i === frames.length - 1) return `0 0 ${MIN_BLOCK_PX}px`
-    const dur = frames[i].duration || 1
+    const dur = frames[i].duration > 0 ? frames[i].duration : 1
     return `${dur} 1 ${MIN_BLOCK_PX}px`
   }
 
@@ -116,7 +118,7 @@ export default function Timeline({
         {frames.map((frame, i) => (
           <div
             key={frame.id}
-            style={{ ...STYLES.frame(i === currentFrameIndex), flex: blockFlex(i) }}
+            style={{ ...STYLES.frame(i === activeIndex), flex: blockFlex(i) }}
             onClick={(e) => { e.stopPropagation(); onJumpToFrame(i) }}
             onContextMenu={(e) => {
               e.preventDefault()
@@ -145,6 +147,8 @@ export default function Timeline({
         step="0.1"
         min="0.1"
         aria-label="当前帧时长(秒)"
+        disabled={currentFrameIndex === frames.length - 1}
+        title={currentFrameIndex === frames.length - 1 ? '最后一帧时长不参与动画' : undefined}
         style={STYLES.durInput}
         defaultValue={curDurSec}
         key={`${currentFrameIndex}-${curDurSec}`}

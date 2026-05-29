@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { frameStartTimes } from '../utils/interpolate'
+import { frameStartTimes, totalDuration } from '../utils/interpolate'
 
 const MIN_DURATION = 100
 
@@ -85,7 +85,13 @@ const useBoardStore = create((set) => ({
     return { board: { ...s.board, data: { ...s.board.data, players } }, isDirty: true }
   }),
 
-  play: () => set({ isPlaying: true }),
+  play: () => set((s) => {
+    if (!s.board) return s
+    const total = totalDuration(s.board.data.frames)
+    if (total <= 0) return s // 单帧无可播放内容，保持暂停
+    const playheadTime = (!s.loop && s.playheadTime >= total) ? 0 : s.playheadTime
+    return { isPlaying: true, playheadTime }
+  }),
   pause: () => set({ isPlaying: false }),
   toggleLoop: () => set((s) => ({ loop: !s.loop })),
   setPlayhead: (ms) => set({ playheadTime: ms }),
