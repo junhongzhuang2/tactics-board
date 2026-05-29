@@ -8,6 +8,7 @@ export default function Disc({
   fieldWidth,
   fieldHeight,
   onDragEnd,      // (newNormState) => void
+  draggable = true,
 }) {
   const { x: cx, y: cy } = toCanvas(discState.x, discState.y, fieldWidth, fieldHeight)
 
@@ -20,7 +21,7 @@ export default function Disc({
   }
 
   return (
-    <Group x={cx} y={cy} draggable onDragEnd={handleDragEnd}>
+    <Group x={cx} y={cy} draggable={draggable} onDragEnd={handleDragEnd}>
       <Circle radius={DISC_RADIUS} fill="#f5c518" stroke="#c8a000" strokeWidth={2} />
       <Circle radius={DISC_RADIUS * 0.55} fill="transparent" stroke="#c8a000" strokeWidth={1.5} />
     </Group>

@@ -12,6 +12,7 @@ export default function Player({
   fieldHeight,
   onDragEnd,        // (playerId, newNormState) => void
   onDoubleClick,    // (playerId) => void
+  draggable = true,
 }) {
   const { x: cx, y: cy } = toCanvas(playerState.x, playerState.y, fieldWidth, fieldHeight)
   const color = TEAM_COLORS[player.team] ?? '#999'
@@ -28,7 +29,7 @@ export default function Player({
   return (
     <Group
       x={cx} y={cy}
-      draggable
+      draggable={draggable}
       onDragEnd={handleDragEnd}
       onDblClick={() => onDoubleClick?.(player.id)}
     >

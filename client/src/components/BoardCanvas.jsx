@@ -3,8 +3,10 @@ import { Stage, Layer } from 'react-konva'
 import Field from './Field'
 import Player from './Player'
 import Disc from './Disc'
-import FrameBar from './FrameBar'
+import Timeline from './Timeline'
 import { useBoardStore } from '../store/boardStore'
+import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
+import { interpolateAt, getEditableFrameIndex } from '../utils/interpolate'
 import { saveBoard } from '../api/boards'
 
 const FIELD_ASPECT = 100 / 37
@@ -50,10 +52,13 @@ export default function BoardCanvas() {
   const containerRef = useRef(null)
   const { stageW, stageH, fieldW, fieldH, fieldX, fieldY } = useFieldSize(containerRef)
   const {
-    board, currentFrameIndex, isDirty,
+    board, currentFrameIndex, isDirty, playheadTime, isPlaying, loop,
     updateFramePlayerState, updateFrameDiscState,
-    addFrame, removeFrame, setCurrentFrame, markClean,
+    insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
+    setPlayhead, play, pause, toggleLoop, markClean,
   } = useBoardStore()
+
+  usePlaybackEngine()
 
   // Auto-save 1 second after any dirty change
   useEffect(() => {
@@ -65,7 +70,16 @@ export default function BoardCanvas() {
     return () => clearTimeout(timer)
   }, [isDirty, board])
 
-  const currentFrame = board ? board.data.frames[currentFrameIndex] : null
+  const frames = board?.data.frames
+  const view = frames ? interpolateAt(frames, playheadTime) : null
+  const editableIndex = frames ? getEditableFrameIndex(frames, playheadTime, isPlaying) : -1
+  const editable = editableIndex !== -1
+
+  function handleStep(dir) {
+    if (!frames) return
+    const next = Math.max(0, Math.min(frames.length - 1, currentFrameIndex + dir))
+    setCurrentFrame(next)
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -77,11 +91,12 @@ export default function BoardCanvas() {
       }}>
         <span style={{ fontWeight: 'bold', fontSize: 16 }}>{board?.name ?? '加载中…'}</span>
         {isDirty && <span style={{ fontSize: 12, color: '#888' }}>保存中…</span>}
+        {!editable && board && <span style={{ fontSize: 12, color: '#f5c518' }}>预览中（停在关键帧才能编辑）</span>}
       </div>
 
-      {/* 画布 — containerRef 始终挂载，避免 ResizeObserver 观察 null */}
+      {/* 画布 — containerRef 始终挂载 */}
       <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#0d0d1a' }}>
-        {!board || !currentFrame ? (
+        {!board || !view ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
             加载中…
           </div>
@@ -92,7 +107,7 @@ export default function BoardCanvas() {
             </Layer>
             <Layer x={fieldX} y={fieldY}>
               {board.data.players.map(player => {
-                const state = currentFrame.playerStates[player.id]
+                const state = view.playerStates[player.id]
                 if (!state) return null
                 return (
                   <Player
@@ -101,8 +116,9 @@ export default function BoardCanvas() {
                     playerState={state}
                     fieldWidth={fieldW}
                     fieldHeight={fieldH}
+                    draggable={editable}
                     onDragEnd={(id, newState) =>
-                      updateFramePlayerState(currentFrameIndex, id, newState)
+                      updateFramePlayerState(editableIndex, id, newState)
                     }
                     onDoubleClick={(id) => {
                       const p = board.data.players.find(pl => pl.id === id)
@@ -118,11 +134,12 @@ export default function BoardCanvas() {
                 )
               })}
               <Disc
-                discState={currentFrame.discState}
+                discState={view.discState}
                 fieldWidth={fieldW}
                 fieldHeight={fieldH}
+                draggable={editable}
                 onDragEnd={(newState) =>
-                  updateFrameDiscState(currentFrameIndex, newState)
+                  updateFrameDiscState(editableIndex, newState)
                 }
               />
             </Layer>
@@ -130,14 +147,23 @@ export default function BoardCanvas() {
         )}
       </div>
 
-      {/* 帧选择器 */}
+      {/* 时间轴 */}
       {board && (
-        <FrameBar
+        <Timeline
           frames={board.data.frames}
           currentFrameIndex={currentFrameIndex}
-          onSelectFrame={setCurrentFrame}
-          onAddFrame={addFrame}
+          playheadTime={playheadTime}
+          isPlaying={isPlaying}
+          loop={loop}
+          onJumpToFrame={setCurrentFrame}
+          onSetPlayhead={setPlayhead}
+          onPlay={play}
+          onPause={pause}
+          onToggleLoop={toggleLoop}
+          onInsertAfter={insertFrameAfter}
           onRemoveFrame={removeFrame}
+          onSetDuration={setFrameDuration}
+          onStep={handleStep}
         />
       )}
     </div>
