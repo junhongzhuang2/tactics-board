@@ -2,6 +2,21 @@ import { create } from 'zustand'
 import { frameStartTimes, totalDuration } from '../utils/interpolate'
 
 const MIN_DURATION = 100
+const HISTORY_LIMIT = 200
+
+// 快照保存对旧 board.data 的引用（依赖 reducer 全程不可变更新）
+const snapshot = (s) => ({
+  data: s.board.data,
+  currentFrameIndex: s.currentFrameIndex,
+  playheadTime: s.playheadTime,
+})
+
+// 在改动前压栈、清空重做栈，再合并本次改动
+const withHistory = (s, next) => ({
+  ...next,
+  past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+  future: [],
+})
 
 const useBoardStore = create((set) => ({
   board: null,
@@ -10,10 +25,13 @@ const useBoardStore = create((set) => ({
   isPlaying: false,
   playheadTime: 0,
   loop: false,
+  past: [],
+  future: [],
 
   setBoard: (board) => set({
     board, currentFrameIndex: 0, isDirty: false,
     isPlaying: false, playheadTime: 0, loop: false,
+    past: [], future: [],
   }),
 
   updateFramePlayerState: (frameIndex, playerId, state) => set((s) => {
@@ -22,14 +40,14 @@ const useBoardStore = create((set) => ({
         ? { ...f, playerStates: { ...f.playerStates, [playerId]: state } }
         : f
     )
-    return { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true }
+    return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
   }),
 
   updateFrameDiscState: (frameIndex, discState) => set((s) => {
     const frames = s.board.data.frames.map((f, i) =>
       i === frameIndex ? { ...f, discState } : f
     )
-    return { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true }
+    return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
   }),
 
   insertFrameAfter: (index) => set((s) => {
@@ -42,13 +60,13 @@ const useBoardStore = create((set) => ({
     }
     const next = [...frames.slice(0, index + 1), newFrame, ...frames.slice(index + 1)]
     const newIndex = index + 1
-    return {
+    return withHistory(s, {
       board: { ...s.board, data: { ...s.board.data, frames: next } },
       currentFrameIndex: newIndex,
       playheadTime: frameStartTimes(next)[newIndex],
       isPlaying: false,
       isDirty: true,
-    }
+    })
   }),
 
   setFrameDuration: (index, ms) => set((s) => {
@@ -56,20 +74,20 @@ const useBoardStore = create((set) => ({
     const frames = s.board.data.frames.map((f, i) =>
       i === index ? { ...f, duration } : f
     )
-    return { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true }
+    return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
   }),
 
   removeFrame: (frameIndex) => set((s) => {
     if (s.board.data.frames.length <= 1) return s
     const frames = s.board.data.frames.filter((_, i) => i !== frameIndex)
     const currentFrameIndex = Math.min(s.currentFrameIndex, frames.length - 1)
-    return {
+    return withHistory(s, {
       board: { ...s.board, data: { ...s.board.data, frames } },
       currentFrameIndex,
       playheadTime: frameStartTimes(frames)[currentFrameIndex],
       isPlaying: false,
       isDirty: true,
-    }
+    })
   }),
 
   setCurrentFrame: (frameIndex) => set((s) => ({
@@ -82,7 +100,7 @@ const useBoardStore = create((set) => ({
     const players = s.board.data.players.map((p) =>
       p.id === playerId ? { ...p, name } : p
     )
-    return { board: { ...s.board, data: { ...s.board.data, players } }, isDirty: true }
+    return withHistory(s, { board: { ...s.board, data: { ...s.board.data, players } }, isDirty: true })
   }),
 
   play: () => set((s) => {

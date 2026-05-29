@@ -9,6 +9,8 @@ beforeEach(() => {
     isPlaying: false,
     playheadTime: 0,
     loop: false,
+    past: [],
+    future: [],
   })
 })
 
@@ -196,4 +198,41 @@ test('setCurrentFrame syncs playhead to that frame start and pauses', () => {
   expect(result.current.currentFrameIndex).toBe(1)
   expect(result.current.playheadTime).toBe(1000) // frame 1 起点 = frame 0 duration
   expect(result.current.isPlaying).toBe(false)
+})
+
+test('a mutating action pushes previous state to past and leaves future empty', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  expect(result.current.past.length).toBe(0)
+  act(() => result.current.updateFramePlayerState(0, 'r1', { x: 0.3, y: 0.4, orientation: 0 }))
+  expect(result.current.past.length).toBe(1)
+  expect(result.current.future).toEqual([])
+})
+
+test('history caps at 200 entries', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  for (let i = 0; i < 201; i++) {
+    act(() => result.current.updateFrameDiscState(0, { x: (i % 100) / 100, y: 0.5 }))
+  }
+  expect(result.current.past.length).toBe(200)
+})
+
+test('setBoard clears history', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  expect(result.current.past.length).toBe(1)
+  act(() => result.current.setBoard(makeBoard()))
+  expect(result.current.past).toEqual([])
+  expect(result.current.future).toEqual([])
+})
+
+test('history snapshot is not mutated by subsequent edits (immutability guard)', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard())) // frame0 r1.x = 0.1
+  act(() => result.current.updateFramePlayerState(0, 'r1', { x: 0.5, y: 0.5, orientation: 0 }))
+  expect(result.current.past[0].data.frames[0].playerStates.r1.x).toBe(0.1)
+  act(() => result.current.updateFramePlayerState(0, 'r1', { x: 0.9, y: 0.9, orientation: 0 }))
+  expect(result.current.past[0].data.frames[0].playerStates.r1.x).toBe(0.1)
 })
