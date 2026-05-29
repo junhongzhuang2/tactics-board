@@ -69,3 +69,10 @@ export function interpolateAt(frames, playheadTime) {
   const t = dur > 0 ? (playheadTime - starts[i]) / dur : 0
   return lerpFrames(frames[i], frames[i + 1], t)
 }
+
+// 播放头精确停在某关键帧起点且未播放时返回该帧索引，否则 -1
+export function getEditableFrameIndex(frames, playheadTime, isPlaying) {
+  if (isPlaying) return -1
+  const starts = frameStartTimes(frames)
+  return starts.findIndex((s) => s === playheadTime)
+}

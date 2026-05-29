@@ -60,3 +60,26 @@ test('interpolateAt with single frame returns that frame', () => {
   const v = interpolateAt(single, 0)
   expect(v.playerStates.r1).toEqual({ x: 0, y: 0, orientation: 0 })
 })
+
+import { getEditableFrameIndex } from './interpolate'
+
+const efFrames = [
+  { id: 'f0', duration: 1000, playerStates: {}, discState: { x: 0, y: 0 } },
+  { id: 'f1', duration: 500, playerStates: {}, discState: { x: 0, y: 0 } },
+  { id: 'f2', duration: 0, playerStates: {}, discState: { x: 0, y: 0 } },
+]
+// frameStartTimes = [0, 1000, 1500]
+
+test('getEditableFrameIndex returns index when parked exactly on a keyframe start', () => {
+  expect(getEditableFrameIndex(efFrames, 0, false)).toBe(0)
+  expect(getEditableFrameIndex(efFrames, 1000, false)).toBe(1)
+  expect(getEditableFrameIndex(efFrames, 1500, false)).toBe(2) // 最后一帧也可编辑
+})
+
+test('getEditableFrameIndex returns -1 between keyframes', () => {
+  expect(getEditableFrameIndex(efFrames, 500, false)).toBe(-1)
+})
+
+test('getEditableFrameIndex returns -1 while playing', () => {
+  expect(getEditableFrameIndex(efFrames, 0, true)).toBe(-1)
+})
