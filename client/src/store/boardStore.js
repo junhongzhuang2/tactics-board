@@ -114,6 +114,36 @@ const useBoardStore = create((set) => ({
   toggleLoop: () => set((s) => ({ loop: !s.loop })),
   setPlayhead: (ms) => set({ playheadTime: ms }),
 
+  undo: () => set((s) => {
+    if (s.past.length === 0) return s
+    const prev = s.past[s.past.length - 1]
+    const cur = snapshot(s)
+    return {
+      board: { ...s.board, data: prev.data },
+      currentFrameIndex: prev.currentFrameIndex,
+      playheadTime: prev.playheadTime,
+      isPlaying: false,
+      isDirty: true,
+      past: s.past.slice(0, -1),
+      future: [...s.future, cur],
+    }
+  }),
+
+  redo: () => set((s) => {
+    if (s.future.length === 0) return s
+    const entry = s.future[s.future.length - 1]
+    const cur = snapshot(s)
+    return {
+      board: { ...s.board, data: entry.data },
+      currentFrameIndex: entry.currentFrameIndex,
+      playheadTime: entry.playheadTime,
+      isPlaying: false,
+      isDirty: true,
+      past: [...s.past, cur],
+      future: s.future.slice(0, -1),
+    }
+  }),
+
   markClean: () => set({ isDirty: false }),
 }))
 

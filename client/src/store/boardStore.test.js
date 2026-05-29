@@ -236,3 +236,75 @@ test('history snapshot is not mutated by subsequent edits (immutability guard)',
   act(() => result.current.updateFramePlayerState(0, 'r1', { x: 0.9, y: 0.9, orientation: 0 }))
   expect(result.current.past[0].data.frames[0].playerStates.r1.x).toBe(0.1)
 })
+
+test('undo restores previous data and moves current to future', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard())) // disc x = 0.5
+  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  expect(result.current.board.data.frames[0].discState.x).toBe(0.7)
+  act(() => result.current.undo())
+  expect(result.current.board.data.frames[0].discState.x).toBe(0.5)
+  expect(result.current.past.length).toBe(0)
+  expect(result.current.future.length).toBe(1)
+})
+
+test('redo reapplies an undone change and empties future', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.undo())
+  act(() => result.current.redo())
+  expect(result.current.board.data.frames[0].discState.x).toBe(0.7)
+  expect(result.current.future).toEqual([])
+  expect(result.current.past.length).toBe(1)
+})
+
+test('a new edit after undo clears the redo stack', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.undo())
+  expect(result.current.future.length).toBe(1)
+  act(() => result.current.updateFrameDiscState(0, { x: 0.3, y: 0.3 }))
+  expect(result.current.future).toEqual([])
+})
+
+test('undo and redo are no-ops on empty stacks', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.undo())
+  expect(result.current.past).toEqual([])
+  expect(result.current.board.data.frames[0].discState.x).toBe(0.5)
+  act(() => result.current.redo())
+  expect(result.current.future).toEqual([])
+})
+
+test('undo restores the frame index and playhead where the edit happened', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({
+    id: 'frame-1', duration: 500,
+    playerStates: { r1: { x: 0.5, y: 0.5, orientation: 0 }, b1: { x: 0.5, y: 0.5, orientation: 0 } },
+    discState: { x: 0.5, y: 0.5 }, annotations: [],
+  })
+  act(() => result.current.setBoard(board))
+  act(() => result.current.setCurrentFrame(1)) // playhead=1000, no history (navigation)
+  act(() => result.current.updateFramePlayerState(1, 'r1', { x: 0.8, y: 0.8, orientation: 0 }))
+  act(() => result.current.setCurrentFrame(0)) // navigate away
+  act(() => result.current.undo())
+  expect(result.current.currentFrameIndex).toBe(1) // jumped back to edit site
+  expect(result.current.playheadTime).toBe(1000)
+  expect(result.current.board.data.frames[1].playerStates.r1.x).toBe(0.5) // reverted
+})
+
+test('markClean (autosave) does not pollute history; redo survives', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.undo())
+  expect(result.current.future.length).toBe(1)
+  act(() => result.current.markClean()) // simulate autosave
+  expect(result.current.future.length).toBe(1) // not polluted
+  act(() => result.current.redo())
+  expect(result.current.board.data.frames[0].discState.x).toBe(0.7) // redo still works
+})
