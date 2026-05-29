@@ -6,6 +6,9 @@ beforeEach(() => {
     board: null,
     currentFrameIndex: 0,
     isDirty: false,
+    isPlaying: false,
+    playheadTime: 0,
+    loop: false,
   })
 })
 
@@ -57,14 +60,6 @@ test('updateFrameDiscState updates disc position', () => {
   expect(result.current.isDirty).toBe(true)
 })
 
-test('addFrame appends copy of current frame', () => {
-  const { result } = renderHook(() => useBoardStore())
-  act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.addFrame())
-  expect(result.current.board.data.frames.length).toBe(2)
-  expect(result.current.board.data.frames[1].playerStates.r1.x).toBe(0.1)
-})
-
 test('removeFrame removes a frame', () => {
   const { result } = renderHook(() => useBoardStore())
   const board = makeBoard()
@@ -100,4 +95,72 @@ test('renamePlayer updates player name', () => {
   act(() => result.current.renamePlayer('r1', '小王'))
   expect(result.current.board.data.players.find(p => p.id === 'r1').name).toBe('小王')
   expect(result.current.isDirty).toBe(true)
+})
+
+test('insertFrameAfter inserts a copy after the given index', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({
+    id: 'frame-1', duration: 1000,
+    playerStates: { r1: { x: 0.9, y: 0.9, orientation: 0 }, b1: { x: 0.1, y: 0.1, orientation: 0 } },
+    discState: { x: 0.2, y: 0.2 }, annotations: [],
+  })
+  act(() => result.current.setBoard(board))
+  act(() => result.current.insertFrameAfter(0))
+  expect(result.current.board.data.frames.length).toBe(3)
+  // 新帧复制 index 0 的状态，插在 index 1
+  expect(result.current.board.data.frames[1].playerStates.r1.x).toBe(0.1)
+  expect(result.current.currentFrameIndex).toBe(1)
+  expect(result.current.isDirty).toBe(true)
+})
+
+test('insertFrameAfter on last frame appends', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.insertFrameAfter(0))
+  expect(result.current.board.data.frames.length).toBe(2)
+  expect(result.current.currentFrameIndex).toBe(1)
+})
+
+test('setFrameDuration updates a frame duration with floor', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.setFrameDuration(0, 2500))
+  expect(result.current.board.data.frames[0].duration).toBe(2500)
+  act(() => result.current.setFrameDuration(0, 10)) // 低于下限
+  expect(result.current.board.data.frames[0].duration).toBe(100)
+  expect(result.current.isDirty).toBe(true)
+})
+
+test('play / pause toggle isPlaying', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.play())
+  expect(result.current.isPlaying).toBe(true)
+  act(() => result.current.pause())
+  expect(result.current.isPlaying).toBe(false)
+})
+
+test('toggleLoop flips loop', () => {
+  const { result } = renderHook(() => useBoardStore())
+  expect(result.current.loop).toBe(false)
+  act(() => result.current.toggleLoop())
+  expect(result.current.loop).toBe(true)
+})
+
+test('setPlayhead sets playheadTime', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setPlayhead(640))
+  expect(result.current.playheadTime).toBe(640)
+})
+
+test('setCurrentFrame syncs playhead to that frame start and pauses', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({ id: 'frame-1', duration: 500, playerStates: {}, discState: { x: 0.5, y: 0.5 }, annotations: [] })
+  act(() => result.current.setBoard(board))
+  act(() => result.current.play())
+  act(() => result.current.setCurrentFrame(1))
+  expect(result.current.currentFrameIndex).toBe(1)
+  expect(result.current.playheadTime).toBe(1000) // frame 1 起点 = frame 0 duration
+  expect(result.current.isPlaying).toBe(false)
 })
