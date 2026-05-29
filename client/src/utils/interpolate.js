@@ -76,3 +76,19 @@ export function getEditableFrameIndex(frames, playheadTime, isPlaying) {
   const starts = frameStartTimes(frames)
   return starts.findIndex((s) => s === playheadTime)
 }
+
+// 推进播放头：返回新位置与是否应停止（rAF 循环用）
+export function advancePlayhead(playheadTime, dt, total, loop) {
+  if (total <= 0) return { next: 0, stop: false }
+  const next = playheadTime + dt
+  if (next >= total) {
+    if (loop) return { next: next % total, stop: false }
+    return { next: total, stop: true }
+  }
+  return { next, stop: false }
+}
+
+// 拖帧块右边缘改时长：起始时长 + 像素位移×每像素毫秒，floor 到最小值
+export function durationFromDrag(startDuration, deltaPx, msPerPx, minDuration = 100) {
+  return Math.max(minDuration, Math.round(startDuration + deltaPx * msPerPx))
+}

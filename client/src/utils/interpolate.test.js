@@ -83,3 +83,38 @@ test('getEditableFrameIndex returns -1 between keyframes', () => {
 test('getEditableFrameIndex returns -1 while playing', () => {
   expect(getEditableFrameIndex(efFrames, 0, true)).toBe(-1)
 })
+
+import { advancePlayhead, durationFromDrag } from './interpolate'
+
+test('advancePlayhead advances within range', () => {
+  expect(advancePlayhead(100, 50, 1000, false)).toEqual({ next: 150, stop: false })
+})
+
+test('advancePlayhead stops at total when not looping and reaching end', () => {
+  expect(advancePlayhead(980, 50, 1000, false)).toEqual({ next: 1000, stop: true })
+})
+
+test('advancePlayhead wraps around when looping', () => {
+  const r = advancePlayhead(980, 70, 1000, true) // 1050 % 1000 = 50
+  expect(r.stop).toBe(false)
+  expect(r.next).toBeCloseTo(50)
+})
+
+test('advancePlayhead with zero total stays at 0', () => {
+  expect(advancePlayhead(0, 50, 0, true)).toEqual({ next: 0, stop: false })
+})
+
+test('durationFromDrag adds pixel delta scaled by msPerPx', () => {
+  // 往右拖 20px，每像素 10ms => +200ms
+  expect(durationFromDrag(1000, 20, 10)).toBe(1200)
+  // 往左拖
+  expect(durationFromDrag(1000, -30, 10)).toBe(700)
+})
+
+test('durationFromDrag floors at minimum 100ms', () => {
+  expect(durationFromDrag(200, -50, 10)).toBe(100) // 200-500 -> floor 100
+})
+
+test('durationFromDrag rounds to integer ms', () => {
+  expect(durationFromDrag(1000, 3, 3.33)).toBe(1010) // 1000 + 9.99 -> 1010
+})
