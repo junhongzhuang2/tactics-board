@@ -308,3 +308,24 @@ test('markClean (autosave) does not pollute history; redo survives', () => {
   act(() => result.current.redo())
   expect(result.current.board.data.frames[0].discState.x).toBe(0.7) // redo still works
 })
+
+test('redo lands the playhead on a keyframe (editable), even after scrubbing before undo', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({
+    id: 'frame-1', duration: 500,
+    playerStates: { r1: { x: 0.5, y: 0.5, orientation: 0 }, b1: { x: 0.5, y: 0.5, orientation: 0 } },
+    discState: { x: 0.5, y: 0.5 }, annotations: [],
+  })
+  act(() => result.current.setBoard(board))
+  // edit at frame 0 (playhead 0 = keyframe)
+  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  // scrub to a non-keyframe position (between frame 0 @0 and frame 1 @1000)
+  act(() => result.current.setPlayhead(400))
+  act(() => result.current.undo())
+  expect(result.current.playheadTime).toBe(0) // landed on frame 0 keyframe
+  act(() => result.current.redo())
+  // redo must also land on the keyframe of the edited frame (0), NOT the scrubbed 400
+  expect(result.current.playheadTime).toBe(0)
+  expect(result.current.currentFrameIndex).toBe(0)
+})

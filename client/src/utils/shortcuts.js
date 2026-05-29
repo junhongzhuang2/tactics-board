@@ -7,6 +7,6 @@ export function isUndoShortcut(e) {
 export function isRedoShortcut(e) {
   return !!((e.ctrlKey || e.metaKey) && (
     ((e.key === 'z' || e.key === 'Z') && e.shiftKey) ||
-    (e.key === 'y' || e.key === 'Y')
+    ((e.key === 'y' || e.key === 'Y') && !e.shiftKey)
   ))
 }

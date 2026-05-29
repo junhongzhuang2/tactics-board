@@ -83,7 +83,7 @@ export default function BoardCanvas() {
       markClean()
     }, 1000)
     return () => clearTimeout(timer)
-  }, [isDirty, board])
+  }, [isDirty, board, markClean])
 
   const frames = board?.data.frames
   const view = frames ? interpolateAt(frames, playheadTime) : null

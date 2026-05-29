@@ -4,11 +4,11 @@ import { frameStartTimes, totalDuration } from '../utils/interpolate'
 const MIN_DURATION = 100
 const HISTORY_LIMIT = 200
 
-// 快照保存对旧 board.data 的引用（依赖 reducer 全程不可变更新）
+// 快照保存对旧 board.data 的引用（依赖 reducer 全程不可变更新）；
+// 播放头不入快照——恢复时由 currentFrameIndex 推导到关键帧起点，保证落点可编辑
 const snapshot = (s) => ({
   data: s.board.data,
   currentFrameIndex: s.currentFrameIndex,
-  playheadTime: s.playheadTime,
 })
 
 // 在改动前压栈、清空重做栈，再合并本次改动
@@ -121,7 +121,7 @@ const useBoardStore = create((set) => ({
     return {
       board: { ...s.board, data: prev.data },
       currentFrameIndex: prev.currentFrameIndex,
-      playheadTime: prev.playheadTime,
+      playheadTime: frameStartTimes(prev.data.frames)[prev.currentFrameIndex],
       isPlaying: false,
       isDirty: true,
       past: s.past.slice(0, -1),
@@ -136,7 +136,7 @@ const useBoardStore = create((set) => ({
     return {
       board: { ...s.board, data: entry.data },
       currentFrameIndex: entry.currentFrameIndex,
-      playheadTime: entry.playheadTime,
+      playheadTime: frameStartTimes(entry.data.frames)[entry.currentFrameIndex],
       isPlaying: false,
       isDirty: true,
       past: [...s.past, cur],

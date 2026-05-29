@@ -21,3 +21,7 @@ test('isRedoShortcut rejects plain Ctrl+Z and bare y', () => {
   expect(isRedoShortcut({ ctrlKey: true, shiftKey: false, key: 'z' })).toBe(false)
   expect(isRedoShortcut({ key: 'y' })).toBe(false)
 })
+
+test('isRedoShortcut rejects Ctrl+Shift+Y', () => {
+  expect(isRedoShortcut({ ctrlKey: true, shiftKey: true, key: 'y' })).toBe(false)
+})
