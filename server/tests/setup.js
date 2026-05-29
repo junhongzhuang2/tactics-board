@@ -2,6 +2,8 @@ const { Pool } = require('pg')
 const fs = require('fs')
 const path = require('path')
 
+require('dotenv').config({ path: path.join(__dirname, '../.env') })
+
 module.exports = async () => {
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL ||
     'postgres://localhost:5432/tactics_board_test'
