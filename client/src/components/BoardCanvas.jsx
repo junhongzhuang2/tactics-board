@@ -36,6 +36,7 @@ function useFieldSize(containerRef) {
         fieldY: (ch - fieldH) / 2,
       })
     }
+    if (!containerRef.current) return
     compute()
     const ro = new ResizeObserver(compute)
     ro.observe(containerRef.current)
@@ -64,15 +65,7 @@ export default function BoardCanvas() {
     return () => clearTimeout(timer)
   }, [isDirty, board])
 
-  if (!board) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
-        加载中…
-      </div>
-    )
-  }
-
-  const currentFrame = board.data.frames[currentFrameIndex]
+  const currentFrame = board ? board.data.frames[currentFrameIndex] : null
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -82,63 +75,71 @@ export default function BoardCanvas() {
         borderBottom: '1px solid #333',
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <span style={{ fontWeight: 'bold', fontSize: 16 }}>{board.name}</span>
+        <span style={{ fontWeight: 'bold', fontSize: 16 }}>{board?.name ?? '加载中…'}</span>
         {isDirty && <span style={{ fontSize: 12, color: '#888' }}>保存中…</span>}
       </div>
 
-      {/* 画布 */}
-      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <Stage width={stageW} height={stageH} style={{ background: '#0d0d1a' }}>
-          <Layer x={fieldX} y={fieldY}>
-            <Field fieldWidth={fieldW} fieldHeight={fieldH} />
-          </Layer>
-          <Layer x={fieldX} y={fieldY}>
-            {board.data.players.map(player => {
-              const state = currentFrame.playerStates[player.id]
-              if (!state) return null
-              return (
-                <Player
-                  key={player.id}
-                  player={player}
-                  playerState={state}
-                  fieldWidth={fieldW}
-                  fieldHeight={fieldH}
-                  onDragEnd={(id, newState) =>
-                    updateFramePlayerState(currentFrameIndex, id, newState)
-                  }
-                  onDoubleClick={(id) => {
-                    const p = board.data.players.find(pl => pl.id === id)
-                    const newName = prompt(
-                      `重命名球员 ${p.number}（当前: ${p.name}）`,
-                      p.name
-                    )
-                    if (newName !== null && newName.trim()) {
-                      useBoardStore.getState().renamePlayer(id, newName.trim())
+      {/* 画布 — containerRef 始终挂载，避免 ResizeObserver 观察 null */}
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#0d0d1a' }}>
+        {!board || !currentFrame ? (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
+            加载中…
+          </div>
+        ) : (
+          <Stage width={stageW} height={stageH}>
+            <Layer x={fieldX} y={fieldY}>
+              <Field fieldWidth={fieldW} fieldHeight={fieldH} />
+            </Layer>
+            <Layer x={fieldX} y={fieldY}>
+              {board.data.players.map(player => {
+                const state = currentFrame.playerStates[player.id]
+                if (!state) return null
+                return (
+                  <Player
+                    key={player.id}
+                    player={player}
+                    playerState={state}
+                    fieldWidth={fieldW}
+                    fieldHeight={fieldH}
+                    onDragEnd={(id, newState) =>
+                      updateFramePlayerState(currentFrameIndex, id, newState)
                     }
-                  }}
-                />
-              )
-            })}
-            <Disc
-              discState={currentFrame.discState}
-              fieldWidth={fieldW}
-              fieldHeight={fieldH}
-              onDragEnd={(newState) =>
-                updateFrameDiscState(currentFrameIndex, newState)
-              }
-            />
-          </Layer>
-        </Stage>
+                    onDoubleClick={(id) => {
+                      const p = board.data.players.find(pl => pl.id === id)
+                      const newName = prompt(
+                        `重命名球员 ${p.number}（当前: ${p.name}）`,
+                        p.name
+                      )
+                      if (newName !== null && newName.trim()) {
+                        useBoardStore.getState().renamePlayer(id, newName.trim())
+                      }
+                    }}
+                  />
+                )
+              })}
+              <Disc
+                discState={currentFrame.discState}
+                fieldWidth={fieldW}
+                fieldHeight={fieldH}
+                onDragEnd={(newState) =>
+                  updateFrameDiscState(currentFrameIndex, newState)
+                }
+              />
+            </Layer>
+          </Stage>
+        )}
       </div>
 
       {/* 帧选择器 */}
-      <FrameBar
-        frames={board.data.frames}
-        currentFrameIndex={currentFrameIndex}
-        onSelectFrame={setCurrentFrame}
-        onAddFrame={addFrame}
-        onRemoveFrame={removeFrame}
-      />
+      {board && (
+        <FrameBar
+          frames={board.data.frames}
+          currentFrameIndex={currentFrameIndex}
+          onSelectFrame={setCurrentFrame}
+          onAddFrame={addFrame}
+          onRemoveFrame={removeFrame}
+        />
+      )}
     </div>
   )
 }

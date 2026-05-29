@@ -1,4 +1,4 @@
-import { Layer, Rect, Line } from 'react-konva'
+import { Group, Rect, Line } from 'react-konva'
 
 const FIELD_COLOR = '#2d5a27'
 const END_ZONE_COLOR = '#1e3d1a'
@@ -13,7 +13,7 @@ export default function Field({ fieldWidth, fieldHeight }) {
   const h = fieldHeight
 
   return (
-    <Layer listening={false}>
+    <Group listening={false}>
       {/* 背景 */}
       <Rect x={0} y={0} width={w} height={h} fill={FIELD_COLOR} />
 
@@ -55,6 +55,6 @@ export default function Field({ fieldWidth, fieldHeight }) {
         stroke={LINE_COLOR} strokeWidth={1}
         dash={[8, 8]} opacity={0.4}
       />
-    </Layer>
+    </Group>
   )
 }
