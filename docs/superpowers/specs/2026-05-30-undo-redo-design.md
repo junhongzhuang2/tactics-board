@@ -37,9 +37,9 @@ future: HistoryEntry[]   // 重做栈
 HistoryEntry = {
   data,               // 对改动前 board.data 的引用（不深拷贝；依赖 reducer 不可变）
   currentFrameIndex,  // 改动发生时所在帧
-  playheadTime,       // 改动发生时的播放头位置
 }
 ```
+> 不存 `playheadTime`：撤销/重做恢复时由 `currentFrameIndex` 推导到该帧的关键帧起点（`frameStartTimes[idx]`），保证落点正好在关键帧上、可继续编辑——避免「编辑→拖动播放头到两帧之间→撤销→重做」后落入只读预览。
 
 - 常量 `HISTORY_LIMIT = 200`：`past` 超过时丢弃最旧条目（从头部移除）。
 - 派生判断：`canUndo = past.length > 0`、`canRedo = future.length > 0`（组件直接读长度，无需额外字段）。
@@ -57,7 +57,7 @@ HistoryEntry = {
 const snapshot = (s) => ({
   data: s.board.data,            // 引用，非拷贝（依赖 reducer 不可变更新）
   currentFrameIndex: s.currentFrameIndex,
-  playheadTime: s.playheadTime,
+  // 不存 playheadTime：恢复时由 currentFrameIndex 推导到关键帧起点
 })
 
 const withHistory = (s, next) => ({
@@ -85,7 +85,7 @@ undo: () => set((s) => {
   return {
     board: { ...s.board, data: prev.data },
     currentFrameIndex: prev.currentFrameIndex,
-    playheadTime: prev.playheadTime,
+    playheadTime: frameStartTimes(prev.data.frames)[prev.currentFrameIndex],
     isPlaying: false,
     isDirty: true,
     past: s.past.slice(0, -1),
@@ -100,7 +100,7 @@ redo: () => set((s) => {
   return {
     board: { ...s.board, data: entry.data },
     currentFrameIndex: entry.currentFrameIndex,
-    playheadTime: entry.playheadTime,
+    playheadTime: frameStartTimes(entry.data.frames)[entry.currentFrameIndex],
     isPlaying: false,
     isDirty: true,
     past: [...s.past, cur],
