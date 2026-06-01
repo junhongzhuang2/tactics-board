@@ -42,3 +42,11 @@ test('close button calls onClose', () => {
   fireEvent.click(screen.getByLabelText('关闭'))
   expect(onClose).toHaveBeenCalled()
 })
+
+test('cone checkbox reflects player.showCone on re-render (controlled)', () => {
+  const props = { x: 0, y: 0, onRename: vi.fn(), onToggleCone: vi.fn(), onClose: vi.fn() }
+  const { rerender } = render(<PlayerEditPanel player={{ id: 'r1', name: '7', showCone: true }} {...props} />)
+  expect(screen.getByLabelText('显示视野锥')).toBeChecked()
+  rerender(<PlayerEditPanel player={{ id: 'r1', name: '7', showCone: false }} {...props} />)
+  expect(screen.getByLabelText('显示视野锥')).not.toBeChecked()
+})

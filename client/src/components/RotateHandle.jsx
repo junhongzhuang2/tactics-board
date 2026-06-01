@@ -25,6 +25,7 @@ export default function RotateHandle({ orientation, onPreview, onCommit }) {
       draggable
       onDragMove={(e) => onPreview(compute(e))}
       onDragEnd={(e) => onCommit(compute(e))}
+      onDblClick={(e) => { e.cancelBubble = true }}
     />
   )
 }

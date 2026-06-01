@@ -1,5 +1,5 @@
 export const PANEL_W = 200
-export const PANEL_H = 112
+export const PANEL_H = 124
 
 const styles = {
   panel: {
@@ -38,7 +38,7 @@ export default function PlayerEditPanel({ player, x, y, onRename, onToggleCone, 
         <input
           type="checkbox"
           aria-label="显示视野锥"
-          defaultChecked={!!player.showCone}
+          checked={!!player.showCone}
           onChange={(e) => onToggleCone(e.target.checked)}
         />
         显示视野锥
