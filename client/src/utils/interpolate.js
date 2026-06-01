@@ -22,6 +22,14 @@ function lerp(a, b, t) {
   return a + (b - a) * t
 }
 
+// 就近角度插值：把 b−a 归一化到 (−π, π] 再按 t 推进
+export function lerpAngle(a, b, t) {
+  let d = (b - a) % (2 * Math.PI)
+  if (d > Math.PI) d -= 2 * Math.PI
+  if (d < -Math.PI) d += 2 * Math.PI
+  return a + d * t
+}
+
 function snapshot(frame) {
   const playerStates = {}
   for (const id in frame.playerStates) {
@@ -38,7 +46,7 @@ function lerpFrames(f0, f1, t) {
     playerStates[id] = {
       x: lerp(s0.x, s1.x, t),
       y: lerp(s0.y, s1.y, t),
-      orientation: lerp(s0.orientation, s1.orientation, t),
+      orientation: lerpAngle(s0.orientation, s1.orientation, t),
     }
   }
   return {
