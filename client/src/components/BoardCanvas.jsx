@@ -5,13 +5,12 @@ import Player from './Player'
 import Disc from './Disc'
 import Timeline from './Timeline'
 import UndoRedoButtons from './UndoRedoButtons'
-import PlayerEditPanel, { PANEL_W, PANEL_H } from './PlayerEditPanel'
+import PlayerEditPanel from './PlayerEditPanel'
 import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
 import { interpolateAt, getEditableFrameIndex } from '../utils/interpolate'
 import { saveBoard } from '../api/boards'
 import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
-import { clampPanel } from '../utils/cone'
 
 const FIELD_ASPECT = 100 / 37
 const PADDING = 40
@@ -174,12 +173,13 @@ export default function BoardCanvas() {
           if (!sel || !selState) return null
           const rawX = fieldX + selState.x * fieldW + 12
           const rawY = fieldY + selState.y * fieldH + 12
-          const pos = clampPanel(rawX, rawY, PANEL_W, PANEL_H, stageW, stageH)
           return (
             <PlayerEditPanel
               player={sel}
-              x={pos.x}
-              y={pos.y}
+              x={rawX}
+              y={rawY}
+              boundsW={stageW}
+              boundsH={stageH}
               onRename={(name) => renamePlayer(selectedPlayerId, name)}
               onToggleCone={(show) => setPlayerShowCone(selectedPlayerId, show)}
               onClose={() => setSelectedPlayerId(null)}

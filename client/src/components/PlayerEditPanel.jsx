@@ -1,5 +1,7 @@
+import { useLayoutEffect, useRef, useState } from 'react'
+import { clampPanel } from '../utils/cone'
+
 export const PANEL_W = 200
-export const PANEL_H = 124
 
 const styles = {
   panel: {
@@ -19,13 +21,25 @@ const styles = {
   },
 }
 
-export default function PlayerEditPanel({ player, x, y, onRename, onToggleCone, onClose }) {
+export default function PlayerEditPanel({ player, x, y, boundsW, boundsH, onRename, onToggleCone, onClose }) {
+  const ref = useRef(null)
+  const [pos, setPos] = useState({ x, y })
+
+  // 量面板真实尺寸再夹进画布边界（避免靠常量猜高度导致底部被切）
+  useLayoutEffect(() => {
+    if (!ref.current) return
+    const w = ref.current.offsetWidth
+    const h = ref.current.offsetHeight
+    setPos(clampPanel(x, y, w, h, boundsW, boundsH))
+  }, [x, y, boundsW, boundsH, player.id])
+
   function commit(e) {
     const v = e.target.value.trim()
     if (v) onRename(v)
   }
+
   return (
-    <div style={{ ...styles.panel, left: x, top: y }}>
+    <div ref={ref} style={{ ...styles.panel, left: pos.x, top: pos.y }}>
       <input
         aria-label="球员名字"
         style={styles.input}
