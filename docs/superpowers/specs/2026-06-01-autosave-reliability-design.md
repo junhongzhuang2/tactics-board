@@ -95,7 +95,7 @@ async function attemptSave() {
 
 **单飞**：同一时刻只一个在途保存——新的触发都经 `attemptSave` bump token，旧 await 完成即被守卫作废；定时器在每次新触发/卸载时清理，避免叠加。
 
-**beforeunload 守卫**：一个 effect 注册 `window` 的 `beforeunload`：当 `hasUnsavedChanges(isDirty, saveStatus)` 为真时 `e.preventDefault(); e.returnValue = ''`（弹原生确认）。卸载时移除监听。
+**beforeunload 守卫**：一个 effect 注册 `window` 的 `beforeunload`：当 `hasUnsavedChanges(isDirty, saveStatus)` 为真时 `e.preventDefault(); e.returnValue = '非空字符串'; return e.returnValue`（弹原生确认）。**注意**：`returnValue` 必须是**非空字符串**，空串被浏览器当作"不拦截"、不会弹框。卸载时移除监听。
 
 **清理**：hook 卸载时 `clearTimeout(debounceRef)`、`clearTimeout(retryRef)`、移除 beforeunload 监听。
 

@@ -9,7 +9,7 @@ import PlayerEditPanel from './PlayerEditPanel'
 import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
 import { interpolateAt, getEditableFrameIndex } from '../utils/interpolate'
-import { saveBoard } from '../api/boards'
+import { useAutoSave } from '../hooks/useAutoSave'
 import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
 
 const FIELD_ASPECT = 100 / 37
@@ -79,15 +79,7 @@ export default function BoardCanvas() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [undo, redo])
 
-  // Auto-save 1 second after any dirty change
-  useEffect(() => {
-    if (!isDirty || !board) return
-    const timer = setTimeout(async () => {
-      await saveBoard(board.id, { data: board.data })
-      markClean()
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [isDirty, board, markClean])
+  const { saveStatus, retryNow } = useAutoSave({ board, isDirty, markClean })
 
   const frames = board?.data.frames
   const view = frames ? interpolateAt(frames, playheadTime) : null
@@ -117,7 +109,23 @@ export default function BoardCanvas() {
             onRedo={redo}
           />
         )}
-        {isDirty && <span style={{ fontSize: 12, color: '#888' }}>保存中…</span>}
+        {board && saveStatus === 'saving' && (
+          <span style={{ fontSize: 12, color: '#888' }}>保存中…</span>
+        )}
+        {board && saveStatus === 'saved' && (
+          <span style={{ fontSize: 12, color: '#888' }}>已保存</span>
+        )}
+        {board && saveStatus === 'error' && (
+          <span style={{ fontSize: 12, color: '#f5c518', display: 'flex', alignItems: 'center', gap: 6 }}>
+            ⚠ 保存失败，重试中
+            <button
+              onClick={retryNow}
+              style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: '#2a2a3e', border: '1px solid #555', color: '#ccc', cursor: 'pointer' }}
+            >
+              立即重试
+            </button>
+          </span>
+        )}
         {!editable && board && <span style={{ fontSize: 12, color: '#f5c518' }}>预览中（停在关键帧才能编辑）</span>}
       </div>
 
