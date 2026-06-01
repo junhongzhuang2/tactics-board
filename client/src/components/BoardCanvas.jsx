@@ -5,11 +5,13 @@ import Player from './Player'
 import Disc from './Disc'
 import Timeline from './Timeline'
 import UndoRedoButtons from './UndoRedoButtons'
+import PlayerEditPanel, { PANEL_W, PANEL_H } from './PlayerEditPanel'
 import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
 import { interpolateAt, getEditableFrameIndex } from '../utils/interpolate'
 import { saveBoard } from '../api/boards'
 import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
+import { clampPanel } from '../utils/cone'
 
 const FIELD_ASPECT = 100 / 37
 const PADDING = 40
@@ -59,9 +61,12 @@ export default function BoardCanvas() {
     updateFramePlayerState, updateFrameDiscState,
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
+    renamePlayer, setPlayerShowCone,
   } = useBoardStore()
 
   usePlaybackEngine()
+
+  const [selectedPlayerId, setSelectedPlayerId] = useState(null)
 
   // 撤销/重做快捷键；焦点在输入框时放行给浏览器原生文本撤销
   useEffect(() => {
@@ -140,19 +145,14 @@ export default function BoardCanvas() {
                     fieldWidth={fieldW}
                     fieldHeight={fieldH}
                     draggable={editable}
+                    editable={editable}
+                    onRotate={(orientation) =>
+                      updateFramePlayerState(editableIndex, player.id, { ...state, orientation })
+                    }
                     onDragEnd={(id, newState) =>
                       updateFramePlayerState(editableIndex, id, newState)
                     }
-                    onDoubleClick={(id) => {
-                      const p = board.data.players.find(pl => pl.id === id)
-                      const newName = prompt(
-                        `重命名球员 ${p.number}（当前: ${p.name}）`,
-                        p.name
-                      )
-                      if (newName !== null && newName.trim()) {
-                        useBoardStore.getState().renamePlayer(id, newName.trim())
-                      }
-                    }}
+                    onDoubleClick={(id) => setSelectedPlayerId(id)}
                   />
                 )
               })}
@@ -168,6 +168,24 @@ export default function BoardCanvas() {
             </Layer>
           </Stage>
         )}
+        {selectedPlayerId && view && (() => {
+          const sel = board.data.players.find(p => p.id === selectedPlayerId)
+          const selState = view.playerStates[selectedPlayerId]
+          if (!sel || !selState) return null
+          const rawX = fieldX + selState.x * fieldW + 12
+          const rawY = fieldY + selState.y * fieldH + 12
+          const pos = clampPanel(rawX, rawY, PANEL_W, PANEL_H, stageW, stageH)
+          return (
+            <PlayerEditPanel
+              player={sel}
+              x={pos.x}
+              y={pos.y}
+              onRename={(name) => renamePlayer(selectedPlayerId, name)}
+              onToggleCone={(show) => setPlayerShowCone(selectedPlayerId, show)}
+              onClose={() => setSelectedPlayerId(null)}
+            />
+          )
+        })()}
       </div>
 
       {/* 时间轴 */}
