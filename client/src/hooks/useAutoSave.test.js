@@ -71,3 +71,24 @@ test('a late stale response does not overwrite newer state (race guard)', async 
   expect(markClean).not.toHaveBeenCalled()
   expect(result.current.saveStatus).toBe('saved')
 })
+
+test('initial saveStatus is idle (no false "saved" before any save)', () => {
+  const { result } = renderHook(() => useAutoSave({ board, isDirty: false, markClean: vi.fn() }))
+  expect(result.current.saveStatus).toBe('idle')
+})
+
+test('rapid edits coalesce into a single save (debounce reset)', async () => {
+  api.saveBoard.mockResolvedValue()
+  const markClean = vi.fn()
+  const { rerender } = renderHook(
+    ({ b }) => useAutoSave({ board: b, isDirty: true, markClean }),
+    { initialProps: { b: { id: 'b1', data: { x: 1 } } } }
+  )
+  await act(async () => { await vi.advanceTimersByTimeAsync(500) }) // half the debounce
+  rerender({ b: { id: 'b1', data: { x: 2 } } })                     // new edit resets debounce
+  await act(async () => { await vi.advanceTimersByTimeAsync(500) }) // old timer would have fired at 1000 if not reset
+  expect(api.saveBoard).not.toHaveBeenCalled()
+  await act(async () => { await vi.advanceTimersByTimeAsync(500) }) // full 1000ms since the last edit
+  expect(api.saveBoard).toHaveBeenCalledTimes(1)
+  expect(api.saveBoard).toHaveBeenCalledWith('b1', { data: { x: 2 } })
+})

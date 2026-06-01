@@ -13,3 +13,7 @@ test('hasUnsavedChanges true while saving, error, or dirty; false when clean+sav
   expect(hasUnsavedChanges(false, 'error')).toBe(true)
   expect(hasUnsavedChanges(true, 'saved')).toBe(true)
 })
+
+test('nextRetryDelay is safe at failureCount 0 (defensive)', () => {
+  expect(nextRetryDelay(0)).toBe(5000)
+})
