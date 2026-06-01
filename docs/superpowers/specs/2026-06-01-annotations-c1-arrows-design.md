@@ -83,6 +83,7 @@ BoardCanvas 本地状态：`tool`（`'none' | 'pass' | 'run'`）、`scope`（`'f
   - 计算两端**物理像素距离** `len = arrowPixelLength(x1*fieldW, y1*fieldH, x2*fieldW, y2*fieldH)`。
   - **【零长度拦截】** 若 `len < MIN_ARROW_PX(5)` → 视为误触，**丢弃 draft，不调 addAnnotation、不进 store、不进撤销栈**。
   - 否则 `createArrowAnnotation(tool, ...draft, color)` → `addAnnotation(scope, currentFrameIndex, anno)`；清空 draft。
+  - **【事件冒泡拦截】** 成功添加后置 `e.cancelBubble = true`，并设一个 `justDrewRef.current = true` 标志；下面的「点空取消选中」处理器若见此标志则跳过并清除——防止绘制结束的残留 click 误触发取消选中。
 - 颜色用默认 `'#ffeb3b'`。
 
 **选中 / 删除（tool === 'none'）**：
@@ -95,7 +96,7 @@ BoardCanvas 本地状态：`tool`（`'none' | 'pass' | 'run'`）、`scope`（`'f
 ## 6. 组件
 
 - **`AnnotationToolbar.jsx`**：画布左上角浮动小工具条。按钮：选择(`none`)、传盘(`pass`,虚线图标)、跑位(`run`,实线图标)，当前工具高亮；作用域开关「本帧/全局」。Props：`tool`、`scope`、`onToolChange`、`onScopeChange`。（折叠面板留 C3。）
-- **`ArrowAnnotation.jsx`**：渲染一条箭头。用 react-konva `<Arrow>`：`points={[x1*fieldW, y1*fieldH, x2*fieldW, y2*fieldH]}`、`stroke/fill=color`、`dash={variant==='pass' ? [10,6] : undefined}`、`strokeWidth=3`、`pointerLength/pointerWidth` 设箭头大小。选中时加高亮（更粗/外发光）。`onClick`/`onTap` → `onSelect(id)`；`onContextMenu` → `onDelete`。
+- **`ArrowAnnotation.jsx`**：渲染一条箭头。用 react-konva `<Arrow>`：`points={[x1*fieldW, y1*fieldH, x2*fieldW, y2*fieldH]}`、`stroke/fill=color`、`dash={variant==='pass' ? [10,6] : undefined}`、`strokeWidth=3`、`pointerLength/pointerWidth` 设箭头大小、**`hitStrokeWidth={15}`**（加宽鼠标命中区，保证细线箭头点选/右键删除手感灵敏）。选中时加高亮（更粗/外发光）。`onClick`/`onTap` → `onSelect(id)`；`onContextMenu` → `onDelete`。
 - **`AnnotationLayer.jsx`**：一个 Konva `<Layer x={fieldX} y={fieldY}>`，渲染 `visibleAnnotations(...)` 的每条 `ArrowAnnotation` + 绘制中的 `draft` 预览。接 `selectedAnnoId`、`onSelect`、`onDelete`。
 - **`BoardCanvas.jsx`**：加 tool/scope/draft/selectedAnnoId 状态；Stage 绘制事件；渲染 `AnnotationToolbar` + `AnnotationLayer`；绘制模式下关闭球员拖动；键盘 Delete/Backspace 删除选中标注（焦点在 input 时放行）。
 
