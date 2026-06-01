@@ -53,10 +53,11 @@ export function useAutoSave({ board, isDirty, markClean }) {
   // 关页守卫：有未保存改动时弹原生提醒
   useEffect(() => {
     function onBeforeUnload(e) {
-      if (hasUnsavedChanges(isDirty, saveStatus)) {
-        e.preventDefault()
-        e.returnValue = ''
-      }
+      if (!hasUnsavedChanges(isDirty, saveStatus)) return
+      // 必须赋非空字符串才会触发浏览器原生离开确认框（空串被当作"不拦截"）
+      e.preventDefault()
+      e.returnValue = '有未保存的改动，确定离开吗？'
+      return e.returnValue
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
