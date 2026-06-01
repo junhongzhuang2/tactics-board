@@ -106,6 +106,27 @@ test('activeFrameIndex returns 0 for single frame', () => {
   expect(activeFrameIndex([afFrames[0]], 0)).toBe(0)
 })
 
+import { lerpAngle } from './interpolate'
+
+test('lerpAngle handles the normal case', () => {
+  expect(lerpAngle(0, Math.PI / 2, 0.5)).toBeCloseTo(Math.PI / 4)
+})
+
+test('lerpAngle crosses straight-left via the short path, not the long way', () => {
+  const a = (170 * Math.PI) / 180
+  const b = (-170 * Math.PI) / 180
+  expect(Math.abs(lerpAngle(a, b, 0.5))).toBeCloseTo(Math.PI) // 落在正左 ±π，而非接近 0
+})
+
+test('interpolateAt uses shortest-path orientation (no 340-degree spin)', () => {
+  const frames = [
+    { id: 'f0', duration: 1000, playerStates: { r1: { x: 0.5, y: 0.5, orientation: (170 * Math.PI) / 180 } }, discState: { x: 0, y: 0 } },
+    { id: 'f1', duration: 500,  playerStates: { r1: { x: 0.5, y: 0.5, orientation: (-170 * Math.PI) / 180 } }, discState: { x: 0, y: 0 } },
+  ]
+  const v = interpolateAt(frames, 500) // 第0段中点
+  expect(Math.abs(v.playerStates.r1.orientation)).toBeCloseTo(Math.PI) // 正左，不是 0
+})
+
 import { advancePlayhead, durationFromDrag } from './interpolate'
 
 test('advancePlayhead advances within range', () => {

@@ -309,6 +309,16 @@ test('markClean (autosave) does not pollute history; redo survives', () => {
   expect(result.current.board.data.frames[0].discState.x).toBe(0.7) // redo still works
 })
 
+test('setPlayerShowCone toggles showCone and records history', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.setPlayerShowCone('r1', true))
+  expect(result.current.board.data.players.find(p => p.id === 'r1').showCone).toBe(true)
+  expect(result.current.past.length).toBe(1)
+  act(() => result.current.undo())
+  expect(result.current.board.data.players.find(p => p.id === 'r1').showCone).toBeFalsy()
+})
+
 test('redo lands the playhead on a keyframe (editable), even after scrubbing before undo', () => {
   const { result } = renderHook(() => useBoardStore())
   const board = makeBoard()

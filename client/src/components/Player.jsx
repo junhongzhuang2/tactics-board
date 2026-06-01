@@ -1,22 +1,29 @@
+import { useState } from 'react'
 import { Circle, Text, Group } from 'react-konva'
 import { toCanvas, toNorm, clampToField } from '../utils/coords'
+import ViewCone from './ViewCone'
+import RotateHandle from './RotateHandle'
 
 const TEAM_COLORS = { red: '#e53935', blue: '#1e88e5' }
 const PLAYER_RADIUS = 18
 const FONT_SIZE = 13
 
 export default function Player({
-  player,           // { id, team, number, name }
+  player,           // { id, team, number, name, showCone }
   playerState,      // { x, y, orientation } — normalized
   fieldWidth,
   fieldHeight,
   onDragEnd,        // (playerId, newNormState) => void
   onDoubleClick,    // (playerId) => void
+  onRotate,         // (orientation) => void  — 仅松手时调用一次
+  editable = false,
   draggable = true,
 }) {
+  const [dragOrientation, setDragOrientation] = useState(null)
   const { x: cx, y: cy } = toCanvas(playerState.x, playerState.y, fieldWidth, fieldHeight)
   const color = TEAM_COLORS[player.team] ?? '#999'
   const label = player.name.length <= 3 ? player.name : player.name.slice(0, 3)
+  const coneOrientation = dragOrientation ?? playerState.orientation
 
   function handleDragEnd(e) {
     const node = e.target
@@ -33,6 +40,7 @@ export default function Player({
       onDragEnd={handleDragEnd}
       onDblClick={() => onDoubleClick?.(player.id)}
     >
+      {player.showCone && <ViewCone orientation={coneOrientation} color={color} />}
       <Circle radius={PLAYER_RADIUS} fill={color} stroke="#fff" strokeWidth={2} />
       <Text
         text={label}
@@ -46,6 +54,13 @@ export default function Player({
         align="center"
         verticalAlign="middle"
       />
+      {player.showCone && editable && (
+        <RotateHandle
+          orientation={coneOrientation}
+          onPreview={(o) => setDragOrientation(o)}
+          onCommit={(o) => { setDragOrientation(null); onRotate?.(o) }}
+        />
+      )}
     </Group>
   )
 }

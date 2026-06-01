@@ -103,6 +103,13 @@ const useBoardStore = create((set) => ({
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, players } }, isDirty: true })
   }),
 
+  setPlayerShowCone: (playerId, show) => set((s) => {
+    const players = s.board.data.players.map((p) =>
+      p.id === playerId ? { ...p, showCone: show } : p
+    )
+    return withHistory(s, { board: { ...s.board, data: { ...s.board.data, players } }, isDirty: true })
+  }),
+
   play: () => set((s) => {
     if (!s.board) return s
     const total = totalDuration(s.board.data.frames)
