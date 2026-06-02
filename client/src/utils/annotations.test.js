@@ -2,6 +2,7 @@ import {
   createArrowAnnotation, visibleAnnotations, arrowPixelLength, MIN_ARROW_PX,
   createRectAnnotation, createEllipseAnnotation, createTextAnnotation,
   MIN_SHAPE_PX, DEFAULT_FONT_PX, ANNO_COLORS,
+  translateAnnotation, annotationTopAnchor,
 } from './annotations'
 
 test('createArrowAnnotation builds an arrow with a unique id and fields', () => {
@@ -88,4 +89,25 @@ test('visibleAnnotations 对混合 type（rect/text）仍正确归类', () => {
   expect(vis).toHaveLength(2)
   expect(vis.find((e) => e.annotation.id === 'g1').scope).toBe('global')
   expect(vis.find((e) => e.annotation.id === 'f1').scope).toBe('frame')
+})
+
+test('translateAnnotation 平移矩形/椭圆/箭头的两角', () => {
+  const r = translateAnnotation({ type: 'rect', x1: 0.1, y1: 0.2, x2: 0.3, y2: 0.4 }, 0.05, -0.1)
+  expect(r.x1).toBeCloseTo(0.15); expect(r.y1).toBeCloseTo(0.1)
+  expect(r.x2).toBeCloseTo(0.35); expect(r.y2).toBeCloseTo(0.3)
+})
+
+test('translateAnnotation 平移文字锚点', () => {
+  const t = translateAnnotation({ type: 'text', x: 0.5, y: 0.6 }, 0.1, 0.1)
+  expect(t.x).toBeCloseTo(0.6); expect(t.y).toBeCloseTo(0.7)
+})
+
+test('annotationTopAnchor 矩形/椭圆/箭头取包围盒顶边中点', () => {
+  const a = annotationTopAnchor({ type: 'rect', x1: 0.2, y1: 0.6, x2: 0.4, y2: 0.2 })
+  expect(a.x).toBeCloseTo(0.3); expect(a.y).toBeCloseTo(0.2)
+})
+
+test('annotationTopAnchor 文字取其锚点', () => {
+  const a = annotationTopAnchor({ type: 'text', x: 0.5, y: 0.3 })
+  expect(a.x).toBeCloseTo(0.5); expect(a.y).toBeCloseTo(0.3)
 })

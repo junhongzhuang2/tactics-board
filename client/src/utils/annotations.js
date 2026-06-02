@@ -42,3 +42,21 @@ export function createEllipseAnnotation(x1, y1, x2, y2, color) {
 export function createTextAnnotation(x, y, text, color, width) {
   return { id: annoId(), type: 'text', x, y, text, color, width }
 }
+
+// 平移：返回平移后的坐标 patch（dx,dy 归一化）
+export function translateAnnotation(annotation, dx, dy) {
+  if (annotation.type === 'text') {
+    return { x: annotation.x + dx, y: annotation.y + dy }
+  }
+  const { x1, y1, x2, y2 } = annotation
+  return { x1: x1 + dx, y1: y1 + dy, x2: x2 + dx, y2: y2 + dy }
+}
+
+// 包围盒顶边中点（浮动工具条定位用），归一化
+export function annotationTopAnchor(annotation) {
+  if (annotation.type === 'text') {
+    return { x: annotation.x, y: annotation.y }
+  }
+  const { x1, y1, x2, y2 } = annotation
+  return { x: (x1 + x2) / 2, y: Math.min(y1, y2) }
+}
