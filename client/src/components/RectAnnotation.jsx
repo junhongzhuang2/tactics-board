@@ -27,6 +27,7 @@ export default function RectAnnotation({ annotation, fieldWidth, fieldHeight, se
         onDragEnd={(e) => {
           const dx = e.target.x() / fieldWidth - Math.min(x1, x2)
           const dy = e.target.y() / fieldHeight - Math.min(y1, y2)
+          e.target.position({ x: left, y: top }) // 复位；提交后由新 props 重新定位
           onMoveCommit?.(translateAnnotation(annotation, dx, dy))
         }}
       />

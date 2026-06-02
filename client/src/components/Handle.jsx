@@ -17,7 +17,13 @@ export default function Handle({ x, y, onDragMove, onDragEnd }) {
       onMouseDown={(e) => { e.cancelBubble = true }}
       onDragStart={(e) => { e.cancelBubble = true }}
       onDragMove={(e) => { e.cancelBubble = true; onDragMove?.(e.target.x() + SIZE / 2, e.target.y() + SIZE / 2) }}
-      onDragEnd={(e) => { e.cancelBubble = true; onDragEnd?.(e.target.x() + SIZE / 2, e.target.y() + SIZE / 2) }}
+      onDragEnd={(e) => {
+        e.cancelBubble = true
+        const px = e.target.x() + SIZE / 2
+        const py = e.target.y() + SIZE / 2
+        e.target.position({ x: x - SIZE / 2, y: y - SIZE / 2 }) // 复位；提交后由新 props 重新定位
+        onDragEnd?.(px, py)
+      }}
     />
   )
 }

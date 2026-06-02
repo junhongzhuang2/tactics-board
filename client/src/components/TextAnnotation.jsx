@@ -26,6 +26,7 @@ export default function TextAnnotation({ annotation, fieldWidth, fieldHeight, se
       onDragEnd={(e) => {
         const dx = e.target.x() / fieldWidth - x
         const dy = e.target.y() / fieldHeight - y
+        e.target.position({ x: x * fieldWidth, y: y * fieldHeight }) // 复位；提交后由新 props 重新定位
         onMoveCommit?.(translateAnnotation(annotation, dx, dy))
       }}
     />
