@@ -398,3 +398,24 @@ test('renameBoard sets the board name and marks dirty without touching history',
   expect(result.current.isDirty).toBe(true)
   expect(result.current.past.length).toBe(pastLenBefore) // 历史不变（board.name 不入撤销栈）
 })
+
+test('moveAnnotation 本帧→全局：从帧移除、加入 global，记历史，undo 恢复', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addAnnotation('frame', 0, { id: 'm1', type: 'rect', x1: 0, y1: 0, x2: 0.2, y2: 0.2 }))
+  act(() => result.current.moveAnnotation('frame', 0, 'global', null, 'm1'))
+  expect(result.current.board.data.frames[0].annotations.find(a => a.id === 'm1')).toBeUndefined()
+  expect(result.current.board.data.globalAnnotations.find(a => a.id === 'm1')).toBeTruthy()
+  act(() => result.current.undo())
+  expect(result.current.board.data.frames[0].annotations.find(a => a.id === 'm1')).toBeTruthy()
+  expect(result.current.board.data.globalAnnotations.find(a => a.id === 'm1')).toBeUndefined()
+})
+
+test('moveAnnotation 全局→本帧：从 global 移除、加入目标帧', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addAnnotation('global', null, { id: 'g9', type: 'text', x: 0.1, y: 0.1, text: 'x' }))
+  act(() => result.current.moveAnnotation('global', null, 'frame', 0, 'g9'))
+  expect(result.current.board.data.globalAnnotations.find(a => a.id === 'g9')).toBeUndefined()
+  expect(result.current.board.data.frames[0].annotations.find(a => a.id === 'g9')).toBeTruthy()
+})

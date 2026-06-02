@@ -152,6 +152,23 @@ const useBoardStore = create((set) => ({
     return withHistory(s, { board: { ...s.board, data: { ...data, frames } }, isDirty: true })
   }),
 
+  moveAnnotation: (fromScope, fromFrameIndex, toScope, toFrameIndex, annotationId) => set((s) => {
+    const data = s.board.data
+    let moved
+    const pluck = (arr) => (arr ?? []).filter((a) => {
+      if (a.id === annotationId) { moved = a; return false }
+      return true
+    })
+    let globalAnnotations = data.globalAnnotations ?? []
+    let frames = data.frames
+    if (fromScope === 'global') globalAnnotations = pluck(globalAnnotations)
+    else frames = frames.map((f, i) => (i === fromFrameIndex ? { ...f, annotations: pluck(f.annotations) } : f))
+    if (!moved) return s
+    if (toScope === 'global') globalAnnotations = [...globalAnnotations, moved]
+    else frames = frames.map((f, i) => (i === toFrameIndex ? { ...f, annotations: [...(f.annotations ?? []), moved] } : f))
+    return withHistory(s, { board: { ...s.board, data: { ...data, globalAnnotations, frames } }, isDirty: true })
+  }),
+
   play: () => set((s) => {
     if (!s.board) return s
     const total = totalDuration(s.board.data.frames)
