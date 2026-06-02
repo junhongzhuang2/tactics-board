@@ -367,6 +367,24 @@ test('removeAnnotation deletes by id and records history; undo restores', () => 
   expect(result.current.board.data.frames[0].annotations).toHaveLength(1)
 })
 
+test('updateAnnotationText 改文字内容（frame scope）并记历史；undo 恢复', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addAnnotation('frame', 0, { id: 't1', type: 'text', x: 0.5, y: 0.5, text: '旧', color: '#fff' }))
+  act(() => result.current.updateAnnotationText('frame', 0, 't1', '新'))
+  expect(result.current.board.data.frames[0].annotations[0].text).toBe('新')
+  act(() => result.current.undo())
+  expect(result.current.board.data.frames[0].annotations[0].text).toBe('旧')
+})
+
+test('updateAnnotationText 改文字内容（global scope）', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addAnnotation('global', null, { id: 'g1', type: 'text', x: 0.2, y: 0.2, text: 'A', color: '#fff' }))
+  act(() => result.current.updateAnnotationText('global', null, 'g1', 'B'))
+  expect(result.current.board.data.globalAnnotations.find(a => a.id === 'g1').text).toBe('B')
+})
+
 test('renameBoard sets the board name and marks dirty without touching history', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
