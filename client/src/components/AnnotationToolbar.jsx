@@ -1,7 +1,12 @@
+import { ANNO_COLORS } from '../utils/annotations'
+
 const TOOLS = [
   { key: 'none', label: '选择' },
   { key: 'pass', label: '传盘' },
   { key: 'run', label: '跑位' },
+  { key: 'rect', label: '矩形' },
+  { key: 'ellipse', label: '椭圆' },
+  { key: 'text', label: '文字' },
 ]
 
 const styles = {
@@ -17,9 +22,13 @@ const styles = {
     color: '#fff',
   }),
   sep: { width: 1, height: 20, background: '#444', margin: '0 2px' },
+  swatch: (c, active) => ({
+    width: 20, height: 20, padding: 0, borderRadius: 4, cursor: 'pointer', background: c,
+    border: active ? '2px solid #fff' : '1px solid #555',
+  }),
 }
 
-export default function AnnotationToolbar({ tool, scope, onToolChange, onScopeChange }) {
+export default function AnnotationToolbar({ tool, scope, color, onToolChange, onScopeChange, onColorChange }) {
   return (
     <div style={styles.bar}>
       {TOOLS.map((t) => (
@@ -36,6 +45,16 @@ export default function AnnotationToolbar({ tool, scope, onToolChange, onScopeCh
       <span style={styles.sep} />
       <button aria-label="本帧" aria-pressed={scope === 'frame'} style={styles.btn(scope === 'frame')} onClick={() => onScopeChange('frame')}>本帧</button>
       <button aria-label="全局" aria-pressed={scope === 'global'} style={styles.btn(scope === 'global')} onClick={() => onScopeChange('global')}>全局</button>
+      <span style={styles.sep} />
+      {ANNO_COLORS.map((c) => (
+        <button
+          key={c}
+          aria-label={`颜色 ${c}`}
+          aria-pressed={color === c}
+          style={styles.swatch(c, color === c)}
+          onClick={() => onColorChange(c)}
+        />
+      ))}
     </div>
   )
 }

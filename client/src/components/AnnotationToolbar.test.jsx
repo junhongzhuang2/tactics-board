@@ -2,8 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import AnnotationToolbar from './AnnotationToolbar'
 
 function setup(over = {}) {
-  const h = { onToolChange: vi.fn(), onScopeChange: vi.fn() }
-  render(<AnnotationToolbar tool="none" scope="frame" {...h} {...over} />)
+  const h = { onToolChange: vi.fn(), onScopeChange: vi.fn(), onColorChange: vi.fn() }
+  render(<AnnotationToolbar tool="none" scope="frame" color="#ffeb3b" {...h} {...over} />)
   return h
 }
 
@@ -36,4 +36,33 @@ test('the active tool and scope are marked aria-pressed', () => {
   expect(screen.getByLabelText('选择')).toHaveAttribute('aria-pressed', 'false')
   expect(screen.getByLabelText('全局')).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByLabelText('本帧')).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('renders the rect / ellipse / text tools', () => {
+  setup()
+  expect(screen.getByLabelText('矩形')).toBeInTheDocument()
+  expect(screen.getByLabelText('椭圆')).toBeInTheDocument()
+  expect(screen.getByLabelText('文字')).toBeInTheDocument()
+})
+
+test('clicking a new tool calls onToolChange with its key', () => {
+  const h = setup()
+  fireEvent.click(screen.getByLabelText('矩形'))
+  expect(h.onToolChange).toHaveBeenCalledWith('rect')
+  fireEvent.click(screen.getByLabelText('椭圆'))
+  expect(h.onToolChange).toHaveBeenCalledWith('ellipse')
+  fireEvent.click(screen.getByLabelText('文字'))
+  expect(h.onToolChange).toHaveBeenCalledWith('text')
+})
+
+test('renders a color swatch per ANNO_COLORS and calls onColorChange', () => {
+  const h = setup()
+  fireEvent.click(screen.getByLabelText('颜色 #ff5252'))
+  expect(h.onColorChange).toHaveBeenCalledWith('#ff5252')
+})
+
+test('the active color swatch is marked aria-pressed', () => {
+  setup({ color: '#4a9eff' })
+  expect(screen.getByLabelText('颜色 #4a9eff')).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByLabelText('颜色 #ffeb3b')).toHaveAttribute('aria-pressed', 'false')
 })
