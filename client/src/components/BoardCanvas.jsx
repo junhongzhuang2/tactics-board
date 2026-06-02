@@ -64,7 +64,7 @@ export default function BoardCanvas() {
     updateFramePlayerState, updateFrameDiscState,
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
-    renamePlayer, setPlayerShowCone,
+    renamePlayer, setPlayerShowCone, renameBoard,
     addAnnotation, removeAnnotation,
   } = useBoardStore()
 
@@ -75,6 +75,7 @@ export default function BoardCanvas() {
   const [scope, setScope] = useState('frame')    // 'frame' | 'global'
   const [draft, setDraft] = useState(null)       // { x1, y1, x2, y2 } 归一化
   const [selectedAnnoId, setSelectedAnnoId] = useState(null)
+  const [editingName, setEditingName] = useState(false)
 
   const justDrewRef = useRef(false)
   const selectionRef = useRef(null)
@@ -180,7 +181,39 @@ export default function BoardCanvas() {
         >
           ← 返回
         </Link>
-        <span style={{ fontWeight: 'bold', fontSize: 16 }}>{board?.name ?? '加载中…'}</span>
+        {editingName ? (
+          <input
+            aria-label="战术板名称"
+            autoFocus
+            defaultValue={board?.name ?? ''}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const v = e.target.value.trim()
+                if (v) renameBoard(v)
+                setEditingName(false)
+              } else if (e.key === 'Escape') {
+                setEditingName(false)
+              }
+            }}
+            onBlur={(e) => {
+              const v = e.target.value.trim()
+              if (v) renameBoard(v)
+              setEditingName(false)
+            }}
+            style={{
+              fontSize: 16, fontWeight: 'bold', padding: '2px 6px', borderRadius: 4,
+              background: '#0d0d1a', border: '1px solid #555', color: '#fff',
+            }}
+          />
+        ) : (
+          <span
+            style={{ fontWeight: 'bold', fontSize: 16, cursor: board ? 'text' : 'default' }}
+            title={board ? '双击改名' : undefined}
+            onDoubleClick={() => { if (board) setEditingName(true) }}
+          >
+            {board?.name ?? '加载中…'}
+          </span>
+        )}
         {board && (
           <UndoRedoButtons
             canUndo={past.length > 0}
