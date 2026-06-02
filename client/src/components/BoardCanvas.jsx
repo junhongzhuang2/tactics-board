@@ -12,7 +12,10 @@ import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
 import AnnotationToolbar from './AnnotationToolbar'
 import AnnotationLayer from './AnnotationLayer'
 import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
-import { visibleAnnotations, createArrowAnnotation, arrowPixelLength, MIN_ARROW_PX, DEFAULT_ANNO_COLOR } from '../utils/annotations'
+import {
+  visibleAnnotations, createArrowAnnotation, createRectAnnotation, createEllipseAnnotation, createTextAnnotation,
+  arrowPixelLength, MIN_SHAPE_PX, DEFAULT_ANNO_COLOR, DEFAULT_FONT_PX,
+} from '../utils/annotations'
 import { useAutoSave } from '../hooks/useAutoSave'
 import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
 
@@ -75,6 +78,8 @@ export default function BoardCanvas() {
   const [scope, setScope] = useState('frame')    // 'frame' | 'global'
   const [draft, setDraft] = useState(null)       // { x1, y1, x2, y2 } 归一化
   const [selectedAnnoId, setSelectedAnnoId] = useState(null)
+  const [color, setColor] = useState(DEFAULT_ANNO_COLOR)
+  const [textDraft, setTextDraft] = useState(null) // { x, y } 归一化；非 null 时显示内联输入框
   const [editingName, setEditingName] = useState(false)
 
   const justDrewRef = useRef(false)
@@ -133,6 +138,10 @@ export default function BoardCanvas() {
     if (scope === 'frame' && !editable) return
     const p = pointerToNorm(e)
     if (!p) return
+    if (tool === 'text') {
+      setTextDraft({ x: p.x, y: p.y }) // 文字：放点 → 内联输入，不走 draft 拖拽
+      return
+    }
     setDraft({ x1: p.x, y1: p.y, x2: p.x, y2: p.y })
   }
 
@@ -146,8 +155,12 @@ export default function BoardCanvas() {
   function handleStageMouseUp(e) {
     if (!draft) return
     const len = arrowPixelLength(draft.x1 * fieldW, draft.y1 * fieldH, draft.x2 * fieldW, draft.y2 * fieldH)
-    if (len >= MIN_ARROW_PX) {
-      const anno = createArrowAnnotation(tool, draft.x1, draft.y1, draft.x2, draft.y2, DEFAULT_ANNO_COLOR)
+    if (len >= MIN_SHAPE_PX) {
+      const { x1, y1, x2, y2 } = draft
+      let anno
+      if (tool === 'rect') anno = createRectAnnotation(x1, y1, x2, y2, color)
+      else if (tool === 'ellipse') anno = createEllipseAnnotation(x1, y1, x2, y2, color)
+      else anno = createArrowAnnotation(tool, x1, y1, x2, y2, color) // pass / run
       addAnnotation(scope, currentFrameIndex, anno)
       justDrewRef.current = true   // 防绘制结束的残留 click 取消选中
       e.cancelBubble = true
@@ -160,6 +173,20 @@ export default function BoardCanvas() {
     if (tool === 'none' && e.target === e.target.getStage()) {
       setSelectedAnnoId(null) // 点空白取消选中
     }
+  }
+
+  function toolToType(t) {
+    if (t === 'rect' || t === 'ellipse') return t
+    return 'arrow' // pass / run / none 的 draft 预览都按箭头渲染
+  }
+
+  function commitText(value) {
+    const t = value.trim()
+    // mousedown 已做 frame-scope 门控，这里只需判空
+    if (t && textDraft) {
+      addAnnotation(scope, currentFrameIndex, createTextAnnotation(textDraft.x, textDraft.y, t, color))
+    }
+    setTextDraft(null)
   }
 
   return (
@@ -248,8 +275,31 @@ export default function BoardCanvas() {
           <AnnotationToolbar
             tool={tool}
             scope={scope}
+            color={color}
             onToolChange={(t) => { setTool(t); setSelectedAnnoId(null) }}
             onScopeChange={setScope}
+            onColorChange={setColor}
+          />
+        )}
+        {textDraft && (
+          <input
+            aria-label="文字标注内容"
+            autoFocus
+            defaultValue=""
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitText(e.target.value)
+              else if (e.key === 'Escape') setTextDraft(null)
+            }}
+            onBlur={(e) => commitText(e.target.value)}
+            style={{
+              position: 'absolute',
+              left: fieldX + textDraft.x * fieldW,
+              top: fieldY + textDraft.y * fieldH,
+              zIndex: 30, // 高于 Konva Stage 容器
+              fontSize: DEFAULT_FONT_PX, fontWeight: 'bold',
+              padding: '2px 6px', borderRadius: 4,
+              background: '#0d0d1a', border: '1px solid #555', color: '#fff',
+            }}
           />
         )}
         {!board || !view ? (
@@ -273,8 +323,9 @@ export default function BoardCanvas() {
               y={fieldY}
               entries={annoEntries}
               draft={draft}
-              draftVariant={tool === 'none' ? 'run' : tool}
-              draftColor={DEFAULT_ANNO_COLOR}
+              draftType={toolToType(tool)}
+              draftVariant={tool === 'pass' ? 'pass' : 'run'}
+              draftColor={color}
               fieldWidth={fieldW}
               fieldHeight={fieldH}
               selectedId={selectedAnnoId}
