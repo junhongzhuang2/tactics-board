@@ -8,7 +8,10 @@ import UndoRedoButtons from './UndoRedoButtons'
 import PlayerEditPanel from './PlayerEditPanel'
 import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
-import { interpolateAt, getEditableFrameIndex } from '../utils/interpolate'
+import AnnotationToolbar from './AnnotationToolbar'
+import AnnotationLayer from './AnnotationLayer'
+import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
+import { visibleAnnotations, createArrowAnnotation, arrowPixelLength, MIN_ARROW_PX, DEFAULT_ANNO_COLOR } from '../utils/annotations'
 import { useAutoSave } from '../hooks/useAutoSave'
 import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
 
@@ -61,11 +64,16 @@ export default function BoardCanvas() {
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone,
+    addAnnotation, removeAnnotation,
   } = useBoardStore()
 
   usePlaybackEngine()
 
   const [selectedPlayerId, setSelectedPlayerId] = useState(null)
+  const [tool, setTool] = useState('none')       // 'none' | 'pass' | 'run'
+  const [scope, setScope] = useState('frame')    // 'frame' | 'global'
+  const [draft, setDraft] = useState(null)       // { x1, y1, x2, y2 } 归一化
+  const [selectedAnnoId, setSelectedAnnoId] = useState(null)
 
   // 撤销/重做快捷键；焦点在输入框时放行给浏览器原生文本撤销
   useEffect(() => {
@@ -85,6 +93,9 @@ export default function BoardCanvas() {
   const view = frames ? interpolateAt(frames, playheadTime) : null
   const editableIndex = frames ? getEditableFrameIndex(frames, playheadTime, isPlaying) : -1
   const editable = editableIndex !== -1
+  const drawing = tool !== 'none'
+  const activeIdx = frames ? activeFrameIndex(frames, playheadTime) : 0
+  const annoEntries = board ? visibleAnnotations(board.data, activeIdx) : []
 
   function handleStep(dir) {
     if (!frames) return
@@ -131,6 +142,14 @@ export default function BoardCanvas() {
 
       {/* 画布 — containerRef 始终挂载 */}
       <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#0d0d1a' }}>
+        {board && (
+          <AnnotationToolbar
+            tool={tool}
+            scope={scope}
+            onToolChange={(t) => { setTool(t); setSelectedAnnoId(null) }}
+            onScopeChange={setScope}
+          />
+        )}
         {!board || !view ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
             加载中…
@@ -140,6 +159,19 @@ export default function BoardCanvas() {
             <Layer x={fieldX} y={fieldY}>
               <Field fieldWidth={fieldW} fieldHeight={fieldH} />
             </Layer>
+            <AnnotationLayer
+              x={fieldX}
+              y={fieldY}
+              entries={annoEntries}
+              draft={draft}
+              draftVariant={tool === 'none' ? 'run' : tool}
+              draftColor={DEFAULT_ANNO_COLOR}
+              fieldWidth={fieldW}
+              fieldHeight={fieldH}
+              selectedId={selectedAnnoId}
+              onSelect={(id) => setSelectedAnnoId(id)}
+              onDelete={(sc, fi, id) => { removeAnnotation(sc, fi, id); setSelectedAnnoId(null) }}
+            />
             <Layer x={fieldX} y={fieldY}>
               {board.data.players.map(player => {
                 const state = view.playerStates[player.id]
@@ -151,7 +183,7 @@ export default function BoardCanvas() {
                     playerState={state}
                     fieldWidth={fieldW}
                     fieldHeight={fieldH}
-                    draggable={editable}
+                    draggable={editable && !drawing}
                     editable={editable}
                     onRotate={(orientation) =>
                       updateFramePlayerState(editableIndex, player.id, { ...state, orientation })
@@ -167,7 +199,7 @@ export default function BoardCanvas() {
                 discState={view.discState}
                 fieldWidth={fieldW}
                 fieldHeight={fieldH}
-                draggable={editable}
+                draggable={editable && !drawing}
                 onDragEnd={(newState) =>
                   updateFrameDiscState(editableIndex, newState)
                 }
