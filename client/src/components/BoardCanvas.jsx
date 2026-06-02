@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Stage, Layer } from 'react-konva'
 import Field from './Field'
 import Player from './Player'
@@ -168,6 +169,17 @@ export default function BoardCanvas() {
         borderBottom: '1px solid #333',
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
+        <Link
+          to="/"
+          title="返回战术板列表"
+          style={{
+            padding: '4px 10px', height: 28, borderRadius: 6, lineHeight: '20px',
+            background: '#2a2a3e', border: '1px solid #555', color: '#ccc',
+            fontSize: 13, textDecoration: 'none',
+          }}
+        >
+          ← 返回
+        </Link>
         <span style={{ fontWeight: 'bold', fontSize: 16 }}>{board?.name ?? '加载中…'}</span>
         {board && (
           <UndoRedoButtons
