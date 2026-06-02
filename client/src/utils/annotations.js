@@ -19,3 +19,26 @@ export function visibleAnnotations(data, activeFrameIndex) {
 export function arrowPixelLength(x1, y1, x2, y2) {
   return Math.hypot(x2 - x1, y2 - y1)
 }
+
+export const MIN_SHAPE_PX = 5
+export const DEFAULT_FONT_PX = 16
+export const ANNO_COLORS = ['#ffeb3b', '#ff5252', '#4a9eff', '#ffffff'] // 黄/红/蓝/白
+
+// 唯一 id（随机后缀避免同毫秒撞 id）
+function annoId() {
+  return `anno-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+// 矩形/椭圆：归一化两角（拖拽起点/终点，可能反向），渲染时算包围盒
+export function createRectAnnotation(x1, y1, x2, y2, color) {
+  return { id: annoId(), type: 'rect', x1, y1, x2, y2, color }
+}
+
+export function createEllipseAnnotation(x1, y1, x2, y2, color) {
+  return { id: annoId(), type: 'ellipse', x1, y1, x2, y2, color }
+}
+
+// 文字：单点锚（左上）+ 字符串
+export function createTextAnnotation(x, y, text, color) {
+  return { id: annoId(), type: 'text', x, y, text, color }
+}
