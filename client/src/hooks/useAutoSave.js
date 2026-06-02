@@ -22,7 +22,7 @@ export function useAutoSave({ board, isDirty, markClean }) {
     const token = ++saveTokenRef.current
     setSaveStatus('saving')
     try {
-      await saveBoard(b.id, { data: b.data })
+      await saveBoard(b.id, { name: b.name, data: b.data })
       if (token !== saveTokenRef.current) return // 竞态守卫：已有更新保存发出
       failureRef.current = 0
       markCleanRef.current()

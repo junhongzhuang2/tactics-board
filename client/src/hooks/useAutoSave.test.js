@@ -4,7 +4,7 @@ import * as api from '../api/boards'
 
 vi.mock('../api/boards', () => ({ saveBoard: vi.fn() }))
 
-const board = { id: 'b1', data: { x: 1 } }
+const board = { id: 'b1', name: 'N', data: { x: 1 } }
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -19,7 +19,7 @@ test('saves after the 1s debounce, marks clean, status saved', async () => {
   const markClean = vi.fn()
   const { result } = renderHook(() => useAutoSave({ board, isDirty: true, markClean }))
   await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
-  expect(api.saveBoard).toHaveBeenCalledWith('b1', { data: { x: 1 } })
+  expect(api.saveBoard).toHaveBeenCalledWith('b1', { name: 'N', data: { x: 1 } })
   expect(markClean).toHaveBeenCalledTimes(1)
   expect(result.current.saveStatus).toBe('saved')
 })
@@ -60,7 +60,7 @@ test('a late stale response does not overwrite newer state (race guard)', async 
   await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
   expect(result.current.saveStatus).toBe('saving')
 
-  const board2 = { id: 'b1', data: { x: 2 } }
+  const board2 = { id: 'b1', name: 'N', data: { x: 2 } }
   rerender({ b: board2 })
   await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
   expect(api.saveBoard).toHaveBeenCalledTimes(2)
@@ -82,13 +82,13 @@ test('rapid edits coalesce into a single save (debounce reset)', async () => {
   const markClean = vi.fn()
   const { rerender } = renderHook(
     ({ b }) => useAutoSave({ board: b, isDirty: true, markClean }),
-    { initialProps: { b: { id: 'b1', data: { x: 1 } } } }
+    { initialProps: { b: { id: 'b1', name: 'N', data: { x: 1 } } } }
   )
   await act(async () => { await vi.advanceTimersByTimeAsync(500) }) // half the debounce
-  rerender({ b: { id: 'b1', data: { x: 2 } } })                     // new edit resets debounce
+  rerender({ b: { id: 'b1', name: 'N', data: { x: 2 } } })          // new edit resets debounce
   await act(async () => { await vi.advanceTimersByTimeAsync(500) }) // old timer would have fired at 1000 if not reset
   expect(api.saveBoard).not.toHaveBeenCalled()
   await act(async () => { await vi.advanceTimersByTimeAsync(500) }) // full 1000ms since the last edit
   expect(api.saveBoard).toHaveBeenCalledTimes(1)
-  expect(api.saveBoard).toHaveBeenCalledWith('b1', { data: { x: 2 } })
+  expect(api.saveBoard).toHaveBeenCalledWith('b1', { name: 'N', data: { x: 2 } })
 })
