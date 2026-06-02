@@ -125,7 +125,10 @@ export default function BoardCanvas() {
   }
 
   function handleStageMouseDown(e) {
+    justDrewRef.current = false // 每次新交互开头清残留标志（防拖到画布外无 click 时卡住）
     if (!drawing || isPlaying) return
+    // 本帧标注只能停在关键帧时画：否则 currentFrameIndex 与活动帧分叉，画完即不可见
+    if (scope === 'frame' && !editable) return
     const p = pointerToNorm(e)
     if (!p) return
     setDraft({ x1: p.x, y1: p.y, x2: p.x, y2: p.y })

@@ -1,9 +1,10 @@
 export const MIN_ARROW_PX = 5
 export const DEFAULT_ANNO_COLOR = '#ffeb3b'
 
-// 新建箭头标注（带唯一 id）
+// 新建箭头标注（带唯一 id；随机后缀避免同毫秒撞 id）
 export function createArrowAnnotation(variant, x1, y1, x2, y2, color) {
-  return { id: `anno-${Date.now()}`, type: 'arrow', variant, x1, y1, x2, y2, color }
+  const id = `anno-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  return { id, type: 'arrow', variant, x1, y1, x2, y2, color }
 }
 
 // 当前应显示的标注：全局（始终）+ 活动帧的本帧标注，带归属信息（供选中/删除定位）

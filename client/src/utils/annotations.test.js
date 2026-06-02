@@ -9,6 +9,12 @@ test('createArrowAnnotation builds an arrow with a unique id and fields', () => 
   expect(a.id).toMatch(/^anno-/)
 })
 
+test('createArrowAnnotation produces distinct ids for arrows made in the same tick', () => {
+  const a = createArrowAnnotation('pass', 0, 0, 1, 1, '#fff')
+  const b = createArrowAnnotation('pass', 0, 0, 1, 1, '#fff')
+  expect(a.id).not.toBe(b.id)
+})
+
 test('visibleAnnotations returns globals always plus the active frame annotations, tagged', () => {
   const data = {
     globalAnnotations: [{ id: 'g1' }],
