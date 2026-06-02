@@ -68,7 +68,7 @@ export default function BoardCanvas() {
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone, renameBoard,
-    addAnnotation, removeAnnotation,
+    addAnnotation, removeAnnotation, updateAnnotationText,
   } = useBoardStore()
 
   usePlaybackEngine()
@@ -186,9 +186,22 @@ export default function BoardCanvas() {
     return 'arrow' // pass / run / none 的 draft 预览都按箭头渲染
   }
 
+  // 双击已有文字 → 进入编辑（预填当前内容，按标注自身的 scope/frame 定位）
+  function handleEditText(sc, fi, annotation) {
+    setTextDraft({ x: annotation.x, y: annotation.y, editingId: annotation.id, scope: sc, frameIndex: fi, initial: annotation.text })
+  }
+
   function commitText(value) {
     const t = value.trim()
-    // mousedown 已做 frame-scope 门控，这里只需判空
+    if (textDraft?.editingId != null) {
+      // 编辑已有文字：空 → 删除；非空且有变化 → 更新；未变 → 不动
+      const { scope: sc, frameIndex: fi, editingId, initial } = textDraft
+      if (!t) removeAnnotation(sc, fi, editingId)
+      else if (t !== initial) updateAnnotationText(sc, fi, editingId, t)
+      setTextDraft(null)
+      return
+    }
+    // 新建：mousedown/click 已做 frame-scope 门控，这里只需判空
     if (t && textDraft) {
       addAnnotation(scope, currentFrameIndex, createTextAnnotation(textDraft.x, textDraft.y, t, color))
     }
@@ -289,9 +302,10 @@ export default function BoardCanvas() {
         )}
         {textDraft && (
           <input
+            key={textDraft.editingId ?? '__new__'}
             aria-label="文字标注内容"
             autoFocus
-            defaultValue=""
+            defaultValue={textDraft.initial ?? ''}
             onKeyDown={(e) => {
               if (e.key === 'Enter') commitText(e.target.value)
               else if (e.key === 'Escape') setTextDraft(null)
@@ -337,6 +351,7 @@ export default function BoardCanvas() {
               selectedId={selectedAnnoId}
               onSelect={(id) => setSelectedAnnoId(id)}
               onDelete={(sc, fi, id) => { removeAnnotation(sc, fi, id); setSelectedAnnoId(null) }}
+              onEdit={handleEditText}
             />
             <Layer x={fieldX} y={fieldY}>
               {board.data.players.map(player => {

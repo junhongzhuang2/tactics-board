@@ -22,7 +22,7 @@ function renderAnnotation(annotation, props) {
 // 渲染「全局 + 活动帧」标注（entries）+ 绘制预览（draft）。
 export default function AnnotationLayer({
   x, y, entries, draft, draftType, draftVariant, draftColor,
-  fieldWidth, fieldHeight, selectedId, onSelect, onDelete,
+  fieldWidth, fieldHeight, selectedId, onSelect, onDelete, onEdit,
 }) {
   return (
     <Layer x={x} y={y}>
@@ -33,6 +33,7 @@ export default function AnnotationLayer({
           selected: annotation.id === selectedId,
           onSelect,
           onDelete: () => onDelete(scope, frameIndex, annotation.id),
+          onEdit: () => onEdit?.(scope, frameIndex, annotation),
         })
       )}
       {draft && draftType !== 'text' &&
