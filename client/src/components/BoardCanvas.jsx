@@ -8,7 +8,10 @@ import UndoRedoButtons from './UndoRedoButtons'
 import PlayerEditPanel from './PlayerEditPanel'
 import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
-import { interpolateAt, getEditableFrameIndex } from '../utils/interpolate'
+import AnnotationToolbar from './AnnotationToolbar'
+import AnnotationLayer from './AnnotationLayer'
+import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
+import { visibleAnnotations, createArrowAnnotation, arrowPixelLength, MIN_ARROW_PX, DEFAULT_ANNO_COLOR } from '../utils/annotations'
 import { useAutoSave } from '../hooks/useAutoSave'
 import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
 
@@ -61,17 +64,32 @@ export default function BoardCanvas() {
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone,
+    addAnnotation, removeAnnotation,
   } = useBoardStore()
 
   usePlaybackEngine()
 
   const [selectedPlayerId, setSelectedPlayerId] = useState(null)
+  const [tool, setTool] = useState('none')       // 'none' | 'pass' | 'run'
+  const [scope, setScope] = useState('frame')    // 'frame' | 'global'
+  const [draft, setDraft] = useState(null)       // { x1, y1, x2, y2 } 归一化
+  const [selectedAnnoId, setSelectedAnnoId] = useState(null)
+
+  const justDrewRef = useRef(false)
+  const selectionRef = useRef(null)
 
   // 撤销/重做快捷键；焦点在输入框时放行给浏览器原生文本撤销
   useEffect(() => {
     function onKeyDown(e) {
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectionRef.current) {
+        e.preventDefault()
+        const { scope: sc, frameIndex: fi, annotation } = selectionRef.current
+        removeAnnotation(sc, fi, annotation.id)
+        setSelectedAnnoId(null)
+        return
+      }
       if (isUndoShortcut(e)) { e.preventDefault(); undo() }
       else if (isRedoShortcut(e)) { e.preventDefault(); redo() }
     }
@@ -85,11 +103,61 @@ export default function BoardCanvas() {
   const view = frames ? interpolateAt(frames, playheadTime) : null
   const editableIndex = frames ? getEditableFrameIndex(frames, playheadTime, isPlaying) : -1
   const editable = editableIndex !== -1
+  const drawing = tool !== 'none'
+  const activeIdx = frames ? activeFrameIndex(frames, playheadTime) : 0
+  const annoEntries = board ? visibleAnnotations(board.data, activeIdx) : []
+  selectionRef.current = annoEntries.find((e) => e.annotation.id === selectedAnnoId) ?? null
 
   function handleStep(dir) {
     if (!frames) return
     const next = Math.max(0, Math.min(frames.length - 1, currentFrameIndex + dir))
     setCurrentFrame(next)
+  }
+
+  function pointerToNorm(e) {
+    const stage = e.target.getStage()
+    const pos = stage?.getPointerPosition()
+    if (!pos) return null
+    return {
+      x: Math.min(1, Math.max(0, (pos.x - fieldX) / fieldW)),
+      y: Math.min(1, Math.max(0, (pos.y - fieldY) / fieldH)),
+    }
+  }
+
+  function handleStageMouseDown(e) {
+    justDrewRef.current = false // 每次新交互开头清残留标志（防拖到画布外无 click 时卡住）
+    if (!drawing || isPlaying) return
+    // 本帧标注只能停在关键帧时画：否则 currentFrameIndex 与活动帧分叉，画完即不可见
+    if (scope === 'frame' && !editable) return
+    const p = pointerToNorm(e)
+    if (!p) return
+    setDraft({ x1: p.x, y1: p.y, x2: p.x, y2: p.y })
+  }
+
+  function handleStageMouseMove(e) {
+    if (!draft) return
+    const p = pointerToNorm(e)
+    if (!p) return
+    setDraft((d) => ({ ...d, x2: p.x, y2: p.y }))
+  }
+
+  function handleStageMouseUp(e) {
+    if (!draft) return
+    const len = arrowPixelLength(draft.x1 * fieldW, draft.y1 * fieldH, draft.x2 * fieldW, draft.y2 * fieldH)
+    if (len >= MIN_ARROW_PX) {
+      const anno = createArrowAnnotation(tool, draft.x1, draft.y1, draft.x2, draft.y2, DEFAULT_ANNO_COLOR)
+      addAnnotation(scope, currentFrameIndex, anno)
+      justDrewRef.current = true   // 防绘制结束的残留 click 取消选中
+      e.cancelBubble = true
+    }
+    setDraft(null)
+  }
+
+  function handleStageClick(e) {
+    if (justDrewRef.current) { justDrewRef.current = false; return }
+    if (tool === 'none' && e.target === e.target.getStage()) {
+      setSelectedAnnoId(null) // 点空白取消选中
+    }
   }
 
   return (
@@ -131,15 +199,43 @@ export default function BoardCanvas() {
 
       {/* 画布 — containerRef 始终挂载 */}
       <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#0d0d1a' }}>
+        {board && (
+          <AnnotationToolbar
+            tool={tool}
+            scope={scope}
+            onToolChange={(t) => { setTool(t); setSelectedAnnoId(null) }}
+            onScopeChange={setScope}
+          />
+        )}
         {!board || !view ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
             加载中…
           </div>
         ) : (
-          <Stage width={stageW} height={stageH}>
+          <Stage
+            width={stageW}
+            height={stageH}
+            onMouseDown={handleStageMouseDown}
+            onMouseMove={handleStageMouseMove}
+            onMouseUp={handleStageMouseUp}
+            onClick={handleStageClick}
+          >
             <Layer x={fieldX} y={fieldY}>
               <Field fieldWidth={fieldW} fieldHeight={fieldH} />
             </Layer>
+            <AnnotationLayer
+              x={fieldX}
+              y={fieldY}
+              entries={annoEntries}
+              draft={draft}
+              draftVariant={tool === 'none' ? 'run' : tool}
+              draftColor={DEFAULT_ANNO_COLOR}
+              fieldWidth={fieldW}
+              fieldHeight={fieldH}
+              selectedId={selectedAnnoId}
+              onSelect={(id) => setSelectedAnnoId(id)}
+              onDelete={(sc, fi, id) => { removeAnnotation(sc, fi, id); setSelectedAnnoId(null) }}
+            />
             <Layer x={fieldX} y={fieldY}>
               {board.data.players.map(player => {
                 const state = view.playerStates[player.id]
@@ -151,7 +247,7 @@ export default function BoardCanvas() {
                     playerState={state}
                     fieldWidth={fieldW}
                     fieldHeight={fieldH}
-                    draggable={editable}
+                    draggable={editable && !drawing}
                     editable={editable}
                     onRotate={(orientation) =>
                       updateFramePlayerState(editableIndex, player.id, { ...state, orientation })
@@ -167,7 +263,7 @@ export default function BoardCanvas() {
                 discState={view.discState}
                 fieldWidth={fieldW}
                 fieldHeight={fieldH}
-                draggable={editable}
+                draggable={editable && !drawing}
                 onDragEnd={(newState) =>
                   updateFrameDiscState(editableIndex, newState)
                 }

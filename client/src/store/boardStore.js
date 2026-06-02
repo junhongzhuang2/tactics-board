@@ -110,6 +110,30 @@ const useBoardStore = create((set) => ({
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, players } }, isDirty: true })
   }),
 
+  addAnnotation: (scope, frameIndex, annotation) => set((s) => {
+    const data = s.board.data
+    if (scope === 'global') {
+      const globalAnnotations = [...(data.globalAnnotations ?? []), annotation]
+      return withHistory(s, { board: { ...s.board, data: { ...data, globalAnnotations } }, isDirty: true })
+    }
+    const frames = data.frames.map((f, i) =>
+      i === frameIndex ? { ...f, annotations: [...(f.annotations ?? []), annotation] } : f
+    )
+    return withHistory(s, { board: { ...s.board, data: { ...data, frames } }, isDirty: true })
+  }),
+
+  removeAnnotation: (scope, frameIndex, annotationId) => set((s) => {
+    const data = s.board.data
+    if (scope === 'global') {
+      const globalAnnotations = (data.globalAnnotations ?? []).filter((a) => a.id !== annotationId)
+      return withHistory(s, { board: { ...s.board, data: { ...data, globalAnnotations } }, isDirty: true })
+    }
+    const frames = data.frames.map((f, i) =>
+      i === frameIndex ? { ...f, annotations: (f.annotations ?? []).filter((a) => a.id !== annotationId) } : f
+    )
+    return withHistory(s, { board: { ...s.board, data: { ...data, frames } }, isDirty: true })
+  }),
+
   play: () => set((s) => {
     if (!s.board) return s
     const total = totalDuration(s.board.data.frames)

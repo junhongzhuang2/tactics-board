@@ -339,3 +339,30 @@ test('redo lands the playhead on a keyframe (editable), even after scrubbing bef
   expect(result.current.playheadTime).toBe(0)
   expect(result.current.currentFrameIndex).toBe(0)
 })
+
+test('addAnnotation frame scope pushes to that frame and records history', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addAnnotation('frame', 0, { id: 'a1', type: 'arrow' }))
+  expect(result.current.board.data.frames[0].annotations).toHaveLength(1)
+  expect(result.current.board.data.frames[0].annotations[0].id).toBe('a1')
+  expect(result.current.past.length).toBe(1)
+})
+
+test('addAnnotation global scope pushes to globalAnnotations', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addAnnotation('global', null, { id: 'g1', type: 'arrow' }))
+  expect(result.current.board.data.globalAnnotations.map(a => a.id)).toContain('g1')
+  expect(result.current.past.length).toBe(1)
+})
+
+test('removeAnnotation deletes by id and records history; undo restores', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addAnnotation('frame', 0, { id: 'a1', type: 'arrow' }))
+  act(() => result.current.removeAnnotation('frame', 0, 'a1'))
+  expect(result.current.board.data.frames[0].annotations).toHaveLength(0)
+  act(() => result.current.undo())
+  expect(result.current.board.data.frames[0].annotations).toHaveLength(1)
+})
