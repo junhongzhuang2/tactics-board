@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listBoards, createBoard, deleteBoard } from '../api/boards'
+import { listBoards, createBoard, deleteBoard, saveBoard } from '../api/boards'
 import { createDefaultBoardData } from '../utils/defaultBoardData'
 
 const STYLES = {
@@ -24,6 +24,10 @@ const STYLES = {
   deleteBtn: {
     padding: '6px 14px', background: 'transparent', color: '#e57373',
     border: '1px solid #e57373', borderRadius: 6, cursor: 'pointer', fontSize: 13,
+  },
+  renameBtn: {
+    padding: '6px 14px', background: 'transparent', color: '#ccc',
+    border: '1px solid #555', borderRadius: 6, cursor: 'pointer', fontSize: 13,
   },
   empty: { color: '#666', textAlign: 'center', marginTop: 80 },
 }
@@ -50,6 +54,15 @@ export default function BoardList() {
     setBoards(bs => bs.filter(b => b.id !== id))
   }
 
+  async function handleRename(e, board) {
+    e.stopPropagation()
+    const v = prompt('新名称', board.name)
+    const trimmed = v?.trim()
+    if (!trimmed || trimmed === board.name) return // 取消/空/未改动 → 不发请求
+    await saveBoard(board.id, { name: trimmed })
+    setBoards(bs => bs.map(b => (b.id === board.id ? { ...b, name: trimmed } : b)))
+  }
+
   return (
     <div style={STYLES.page}>
       <div style={STYLES.header}>
@@ -73,12 +86,20 @@ export default function BoardList() {
               {new Date(board.updated_at).toLocaleString('zh-CN')}
             </div>
           </div>
-          <button
-            style={STYLES.deleteBtn}
-            onClick={(e) => handleDelete(e, board.id)}
-          >
-            删除
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              style={STYLES.renameBtn}
+              onClick={(e) => handleRename(e, board)}
+            >
+              重命名
+            </button>
+            <button
+              style={STYLES.deleteBtn}
+              onClick={(e) => handleDelete(e, board.id)}
+            >
+              删除
+            </button>
+          </div>
         </div>
       ))}
     </div>
