@@ -66,3 +66,12 @@ test('the active color swatch is marked aria-pressed', () => {
   expect(screen.getByLabelText('颜色 #4a9eff')).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByLabelText('颜色 #ffeb3b')).toHaveAttribute('aria-pressed', 'false')
 })
+
+test('工具栏可收起与展开', () => {
+  setup()
+  expect(screen.getByLabelText('矩形')).toBeInTheDocument()
+  fireEvent.click(screen.getByLabelText('收起工具栏'))
+  expect(screen.queryByLabelText('矩形')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByLabelText('展开工具栏'))
+  expect(screen.getByLabelText('矩形')).toBeInTheDocument()
+})

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ANNO_COLORS } from '../utils/annotations'
 
 const TOOLS = [
@@ -29,6 +30,16 @@ const styles = {
 }
 
 export default function AnnotationToolbar({ tool, scope, color, onToolChange, onScopeChange, onColorChange }) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  if (collapsed) {
+    return (
+      <div style={styles.bar}>
+        <button aria-label="展开工具栏" style={styles.btn(false)} onClick={() => setCollapsed(false)}>✎ 标注</button>
+      </div>
+    )
+  }
+
   return (
     <div style={styles.bar}>
       {TOOLS.map((t) => (
@@ -55,6 +66,8 @@ export default function AnnotationToolbar({ tool, scope, color, onToolChange, on
           onClick={() => onColorChange(c)}
         />
       ))}
+      <span style={styles.sep} />
+      <button aria-label="收起工具栏" style={styles.btn(false)} onClick={() => setCollapsed(true)}>«</button>
     </div>
   )
 }
