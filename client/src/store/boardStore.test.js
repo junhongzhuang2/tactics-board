@@ -367,21 +367,24 @@ test('removeAnnotation deletes by id and records history; undo restores', () => 
   expect(result.current.board.data.frames[0].annotations).toHaveLength(1)
 })
 
-test('updateAnnotationText 改文字内容（frame scope）并记历史；undo 恢复', () => {
+test('updateAnnotation 合并 patch（改 text + width）frame scope 并记历史；undo 恢复', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.addAnnotation('frame', 0, { id: 't1', type: 'text', x: 0.5, y: 0.5, text: '旧', color: '#fff' }))
-  act(() => result.current.updateAnnotationText('frame', 0, 't1', '新'))
-  expect(result.current.board.data.frames[0].annotations[0].text).toBe('新')
+  act(() => result.current.addAnnotation('frame', 0, { id: 't1', type: 'text', x: 0.5, y: 0.5, text: '旧', width: 0.2, color: '#fff' }))
+  act(() => result.current.updateAnnotation('frame', 0, 't1', { text: '新', width: 0.3 }))
+  const a = result.current.board.data.frames[0].annotations[0]
+  expect(a.text).toBe('新')
+  expect(a.width).toBe(0.3)
+  expect(a.color).toBe('#fff') // 未在 patch 里的字段保持不变
   act(() => result.current.undo())
   expect(result.current.board.data.frames[0].annotations[0].text).toBe('旧')
 })
 
-test('updateAnnotationText 改文字内容（global scope）', () => {
+test('updateAnnotation 合并 patch（global scope）', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
   act(() => result.current.addAnnotation('global', null, { id: 'g1', type: 'text', x: 0.2, y: 0.2, text: 'A', color: '#fff' }))
-  act(() => result.current.updateAnnotationText('global', null, 'g1', 'B'))
+  act(() => result.current.updateAnnotation('global', null, 'g1', { text: 'B' }))
   expect(result.current.board.data.globalAnnotations.find(a => a.id === 'g1').text).toBe('B')
 })
 

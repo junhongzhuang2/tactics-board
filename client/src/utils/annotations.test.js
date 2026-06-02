@@ -57,10 +57,10 @@ test('createEllipseAnnotation 产出 ellipse 结构', () => {
   expect(a.id).toMatch(/^anno-/)
 })
 
-test('createTextAnnotation 产出 text 结构（单点 + 字符串）', () => {
-  const a = createTextAnnotation(0.5, 0.6, '助攻跑位', '#ffffff')
+test('createTextAnnotation 产出 text 结构（单点 + 字符串，可选框宽）', () => {
+  const a = createTextAnnotation(0.5, 0.6, '助攻跑位', '#ffffff', 0.25)
   expect(a.type).toBe('text')
-  expect(a).toMatchObject({ x: 0.5, y: 0.6, text: '助攻跑位', color: '#ffffff' })
+  expect(a).toMatchObject({ x: 0.5, y: 0.6, text: '助攻跑位', color: '#ffffff', width: 0.25 })
   expect(a.id).toMatch(/^anno-/)
 })
 

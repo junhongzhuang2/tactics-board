@@ -139,15 +139,15 @@ const useBoardStore = create((set) => ({
     return withHistory(s, { board: { ...s.board, data: { ...data, frames } }, isDirty: true })
   }),
 
-  updateAnnotationText: (scope, frameIndex, annotationId, text) => set((s) => {
+  updateAnnotation: (scope, frameIndex, annotationId, patch) => set((s) => {
     const data = s.board.data
-    const patch = (a) => (a.id === annotationId ? { ...a, text } : a)
+    const apply = (a) => (a.id === annotationId ? { ...a, ...patch } : a)
     if (scope === 'global') {
-      const globalAnnotations = (data.globalAnnotations ?? []).map(patch)
+      const globalAnnotations = (data.globalAnnotations ?? []).map(apply)
       return withHistory(s, { board: { ...s.board, data: { ...data, globalAnnotations } }, isDirty: true })
     }
     const frames = data.frames.map((f, i) =>
-      i === frameIndex ? { ...f, annotations: (f.annotations ?? []).map(patch) } : f
+      i === frameIndex ? { ...f, annotations: (f.annotations ?? []).map(apply) } : f
     )
     return withHistory(s, { board: { ...s.board, data: { ...data, frames } }, isDirty: true })
   }),

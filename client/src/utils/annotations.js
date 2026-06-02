@@ -38,7 +38,7 @@ export function createEllipseAnnotation(x1, y1, x2, y2, color) {
   return { id: annoId(), type: 'ellipse', x1, y1, x2, y2, color }
 }
 
-// 文字：单点锚（左上）+ 字符串
-export function createTextAnnotation(x, y, text, color) {
-  return { id: annoId(), type: 'text', x, y, text, color }
+// 文字：单点锚（左上）+ 字符串；width 可选（归一化框宽，用于自动折行，缺省则只按 \n 换行）
+export function createTextAnnotation(x, y, text, color, width) {
+  return { id: annoId(), type: 'text', x, y, text, color, width }
 }

@@ -3,7 +3,7 @@ import { DEFAULT_FONT_PX } from '../utils/annotations'
 
 // 文字标注。单点锚（左上）+ 固定屏幕字号（不随画布缩放）。文字本身即命中区。
 export default function TextAnnotation({ annotation, fieldWidth, fieldHeight, selected, onSelect, onDelete, onEdit, listening }) {
-  const { x, y, text, color } = annotation
+  const { x, y, text, color, width } = annotation
   return (
     <Text
       x={x * fieldWidth}
@@ -12,6 +12,8 @@ export default function TextAnnotation({ annotation, fieldWidth, fieldHeight, se
       fontSize={DEFAULT_FONT_PX}
       fontStyle="bold"
       fill={color}
+      width={width != null ? width * fieldWidth : undefined}
+      wrap="word"
       listening={listening}
       shadowColor={selected ? '#ffffff' : undefined}
       shadowBlur={selected ? 8 : 0}

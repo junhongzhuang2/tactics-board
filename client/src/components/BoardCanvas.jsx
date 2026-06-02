@@ -68,7 +68,7 @@ export default function BoardCanvas() {
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone, renameBoard,
-    addAnnotation, removeAnnotation, updateAnnotationText,
+    addAnnotation, removeAnnotation, updateAnnotation,
   } = useBoardStore()
 
   usePlaybackEngine()
@@ -191,24 +191,29 @@ export default function BoardCanvas() {
     return 'arrow' // pass / run / none 的 draft 预览都按箭头渲染
   }
 
-  // 双击已有文字 → 进入编辑（预填当前内容，按标注自身的 scope/frame 定位）
+  // 双击已有文字 → 进入编辑（预填当前内容 + 框宽，按标注自身的 scope/frame 定位）
   function handleEditText(sc, fi, annotation) {
-    setTextDraft({ x: annotation.x, y: annotation.y, editingId: annotation.id, scope: sc, frameIndex: fi, initial: annotation.text })
+    setTextDraft({
+      x: annotation.x, y: annotation.y,
+      editingId: annotation.id, scope: sc, frameIndex: fi,
+      initial: annotation.text, initialWidth: annotation.width,
+    })
   }
 
-  function commitText(value) {
+  function commitText(value, widthPx) {
     const t = value.trim()
+    const width = widthPx ? widthPx / fieldW : undefined // 归一化框宽，用于画布上自动折行
     if (textDraft?.editingId != null) {
-      // 编辑已有文字：空 → 删除；非空且有变化 → 更新；未变 → 不动
-      const { scope: sc, frameIndex: fi, editingId, initial } = textDraft
+      // 编辑已有文字：空 → 删除；非空且 text/宽度 有变化 → 更新；未变 → 不动
+      const { scope: sc, frameIndex: fi, editingId, initial, initialWidth } = textDraft
       if (!t) removeAnnotation(sc, fi, editingId)
-      else if (t !== initial) updateAnnotationText(sc, fi, editingId, t)
+      else if (t !== initial || width !== initialWidth) updateAnnotation(sc, fi, editingId, { text: t, width })
       setTextDraft(null)
       return
     }
     // 新建：mousedown/click 已做 frame-scope 门控，这里只需判空
     if (t && textDraft) {
-      addAnnotation(scope, currentFrameIndex, createTextAnnotation(textDraft.x, textDraft.y, t, color))
+      addAnnotation(scope, currentFrameIndex, createTextAnnotation(textDraft.x, textDraft.y, t, color, width))
     }
     setTextDraft(null)
   }
@@ -306,24 +311,25 @@ export default function BoardCanvas() {
           />
         )}
         {textDraft && (
-          <input
+          <textarea
             key={textDraft.editingId ?? '__new__'}
             aria-label="文字标注内容"
             autoFocus
             defaultValue={textDraft.initial ?? ''}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitText(e.target.value)
-              else if (e.key === 'Escape') setTextDraft(null)
-            }}
-            onBlur={(e) => commitText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setTextDraft(null) }} // 回车换行；Esc 取消
+            onBlur={(e) => commitText(e.target.value, e.target.offsetWidth)}  // 失焦提交，记住拖出来的框宽
             style={{
               position: 'absolute',
               left: fieldX + textDraft.x * fieldW,
               top: fieldY + textDraft.y * fieldH,
               zIndex: 30, // 高于 Konva Stage 容器
-              fontSize: DEFAULT_FONT_PX, fontWeight: 'bold',
-              padding: '2px 6px', borderRadius: 4,
+              width: textDraft.initialWidth != null ? textDraft.initialWidth * fieldW : 160,
+              minWidth: 60, minHeight: 28,
+              resize: 'both', overflow: 'auto', // 可拖右下角调整长宽
+              fontSize: DEFAULT_FONT_PX, fontWeight: 'bold', fontFamily: 'inherit', lineHeight: 1.2,
+              padding: '2px 6px', borderRadius: 4, boxSizing: 'border-box',
               background: '#0d0d1a', border: '1px solid #555', color: '#fff',
+              whiteSpace: 'pre-wrap',
             }}
           />
         )}
