@@ -84,6 +84,7 @@ export default function BoardCanvas() {
 
   const justDrewRef = useRef(false)
   const selectionRef = useRef(null)
+  const endingTextRef = useRef(false) // 输入框开着时点画布：本次点击只用于结束编辑，不新建
 
   // 撤销/重做快捷键；焦点在输入框时放行给浏览器原生文本撤销
   useEffect(() => {
@@ -137,7 +138,10 @@ export default function BoardCanvas() {
     // 本帧标注只能停在关键帧时画：否则 currentFrameIndex 与活动帧分叉，画完即不可见
     if (scope === 'frame' && !editable) return
     // 文字在 click（手势结束）时放置，不在 mousedown：否则 mousedown 的默认聚焦行为会立刻 blur 掉刚挂载的 autoFocus 输入框
-    if (tool === 'text') return
+    if (tool === 'text') {
+      if (textDraft) endingTextRef.current = true // 已有输入框：本次点击用于结束（blur 提交），随后的 click 不新建
+      return
+    }
     const p = pointerToNorm(e)
     if (!p) return
     setDraft({ x1: p.x, y1: p.y, x2: p.x, y2: p.y })
@@ -169,6 +173,7 @@ export default function BoardCanvas() {
   function handleStageClick(e) {
     if (justDrewRef.current) { justDrewRef.current = false; return }
     if (tool === 'text') {
+      if (endingTextRef.current) { endingTextRef.current = false; return } // 本次点击是结束上一个编辑，不新建
       // 放置文字：在 click（手势结束）时挂载输入框，确保 autoFocus 不被本次点击的聚焦行为打断
       if (isPlaying) return
       if (scope === 'frame' && !editable) return
@@ -295,7 +300,7 @@ export default function BoardCanvas() {
             tool={tool}
             scope={scope}
             color={color}
-            onToolChange={(t) => { setTool(t); setSelectedAnnoId(null) }}
+            onToolChange={(t) => { setTool(t); setSelectedAnnoId(null); endingTextRef.current = false }}
             onScopeChange={setScope}
             onColorChange={setColor}
           />
@@ -346,6 +351,7 @@ export default function BoardCanvas() {
               draftType={toolToType(tool)}
               draftVariant={tool === 'pass' ? 'pass' : 'run'}
               draftColor={color}
+              tool={tool}
               fieldWidth={fieldW}
               fieldHeight={fieldH}
               selectedId={selectedAnnoId}

@@ -21,9 +21,10 @@ function renderAnnotation(annotation, props) {
 
 // 渲染「全局 + 活动帧」标注（entries）+ 绘制预览（draft）。
 export default function AnnotationLayer({
-  x, y, entries, draft, draftType, draftVariant, draftColor,
+  x, y, entries, draft, draftType, draftVariant, draftColor, tool,
   fieldWidth, fieldHeight, selectedId, onSelect, onDelete, onEdit,
 }) {
+  const textTool = tool === 'text'
   return (
     <Layer x={x} y={y}>
       {entries.map(({ annotation, scope, frameIndex }) =>
@@ -34,6 +35,9 @@ export default function AnnotationLayer({
           onSelect,
           onDelete: () => onDelete(scope, frameIndex, annotation.id),
           onEdit: () => onEdit?.(scope, frameIndex, annotation),
+          // 文字工具下，形状/箭头不监听点击 → 让点击穿透到 Stage，可在图形内部放置文字；
+          // 文字标注始终监听（保留双击编辑）。
+          listening: annotation.type === 'text' ? true : !textTool,
         })
       )}
       {draft && draftType !== 'text' &&

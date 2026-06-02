@@ -1,7 +1,7 @@
 import { Arrow } from 'react-konva'
 
 // 一条箭头。pass=虚线，run=实线。hitStrokeWidth 加宽命中区，细线也好点选/右键。
-export default function ArrowAnnotation({ annotation, fieldWidth, fieldHeight, selected, onSelect, onDelete }) {
+export default function ArrowAnnotation({ annotation, fieldWidth, fieldHeight, selected, onSelect, onDelete, listening }) {
   const { x1, y1, x2, y2, variant, color } = annotation
   return (
     <Arrow
@@ -13,6 +13,7 @@ export default function ArrowAnnotation({ annotation, fieldWidth, fieldHeight, s
       pointerLength={12}
       pointerWidth={12}
       hitStrokeWidth={15}
+      listening={listening}
       shadowColor={selected ? '#ffffff' : undefined}
       shadowBlur={selected ? 8 : 0}
       onClick={(e) => { e.cancelBubble = true; onSelect?.(annotation.id) }}
