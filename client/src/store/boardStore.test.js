@@ -366,3 +366,14 @@ test('removeAnnotation deletes by id and records history; undo restores', () => 
   act(() => result.current.undo())
   expect(result.current.board.data.frames[0].annotations).toHaveLength(1)
 })
+
+test('renameBoard sets the board name and marks dirty without touching history', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 })) // 制造一条历史
+  const pastLenBefore = result.current.past.length
+  act(() => result.current.renameBoard('新名字'))
+  expect(result.current.board.name).toBe('新名字')
+  expect(result.current.isDirty).toBe(true)
+  expect(result.current.past.length).toBe(pastLenBefore) // 历史不变（board.name 不入撤销栈）
+})

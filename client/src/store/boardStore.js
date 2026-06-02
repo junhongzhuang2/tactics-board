@@ -34,6 +34,11 @@ const useBoardStore = create((set) => ({
     past: [], future: [],
   }),
 
+  renameBoard: (name) => set((s) => {
+    if (!s.board) return s
+    return { board: { ...s.board, name }, isDirty: true }
+  }),
+
   updateFramePlayerState: (frameIndex, playerId, state) => set((s) => {
     const frames = s.board.data.frames.map((f, i) =>
       i === frameIndex
