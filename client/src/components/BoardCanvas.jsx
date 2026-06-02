@@ -136,12 +136,10 @@ export default function BoardCanvas() {
     if (!drawing || isPlaying) return
     // 本帧标注只能停在关键帧时画：否则 currentFrameIndex 与活动帧分叉，画完即不可见
     if (scope === 'frame' && !editable) return
+    // 文字在 click（手势结束）时放置，不在 mousedown：否则 mousedown 的默认聚焦行为会立刻 blur 掉刚挂载的 autoFocus 输入框
+    if (tool === 'text') return
     const p = pointerToNorm(e)
     if (!p) return
-    if (tool === 'text') {
-      setTextDraft({ x: p.x, y: p.y }) // 文字：放点 → 内联输入，不走 draft 拖拽
-      return
-    }
     setDraft({ x1: p.x, y1: p.y, x2: p.x, y2: p.y })
   }
 
@@ -170,6 +168,14 @@ export default function BoardCanvas() {
 
   function handleStageClick(e) {
     if (justDrewRef.current) { justDrewRef.current = false; return }
+    if (tool === 'text') {
+      // 放置文字：在 click（手势结束）时挂载输入框，确保 autoFocus 不被本次点击的聚焦行为打断
+      if (isPlaying) return
+      if (scope === 'frame' && !editable) return
+      const p = pointerToNorm(e)
+      if (p) setTextDraft({ x: p.x, y: p.y })
+      return
+    }
     if (tool === 'none' && e.target === e.target.getStage()) {
       setSelectedAnnoId(null) // 点空白取消选中
     }
