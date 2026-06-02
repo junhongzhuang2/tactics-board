@@ -80,6 +80,7 @@ export default function BoardCanvas() {
   const [selectedAnnoId, setSelectedAnnoId] = useState(null)
   const [color, setColor] = useState(DEFAULT_ANNO_COLOR)
   const [textDraft, setTextDraft] = useState(null) // { x, y } 归一化；非 null 时显示内联输入框
+  const [dragPreview, setDragPreview] = useState(null) // { id, patch }：拖句柄改尺寸的本地预览，不入历史
   const [editingName, setEditingName] = useState(false)
 
   const justDrewRef = useRef(false)
@@ -216,6 +217,19 @@ export default function BoardCanvas() {
       addAnnotation(scope, currentFrameIndex, createTextAnnotation(textDraft.x, textDraft.y, t, color, width))
     }
     setTextDraft(null)
+  }
+
+  // 移动：松手一次性提交一步（拖动中由 Konva 原生预览本体）
+  function handleMove(sc, fi, id, patch) {
+    updateAnnotation(sc, fi, id, patch)
+  }
+  // 改尺寸：拖句柄时本地预览，松手提交一步
+  function handleResizePreview(id, patch) {
+    setDragPreview({ id, patch })
+  }
+  function handleResizeCommit(sc, fi, id, patch) {
+    updateAnnotation(sc, fi, id, patch)
+    setDragPreview(null)
   }
 
   return (
@@ -358,6 +372,10 @@ export default function BoardCanvas() {
               draftVariant={tool === 'pass' ? 'pass' : 'run'}
               draftColor={color}
               tool={tool}
+              dragPreview={dragPreview}
+              onMove={handleMove}
+              onResizePreview={handleResizePreview}
+              onResizeCommit={handleResizeCommit}
               fieldWidth={fieldW}
               fieldHeight={fieldH}
               selectedId={selectedAnnoId}

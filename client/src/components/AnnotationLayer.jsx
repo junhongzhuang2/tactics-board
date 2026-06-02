@@ -21,25 +21,32 @@ function renderAnnotation(annotation, props) {
 
 // 渲染「全局 + 活动帧」标注（entries）+ 绘制预览（draft）。
 export default function AnnotationLayer({
-  x, y, entries, draft, draftType, draftVariant, draftColor, tool,
-  fieldWidth, fieldHeight, selectedId, onSelect, onDelete, onEdit,
+  x, y, entries, draft, draftType, draftVariant, draftColor, tool, dragPreview,
+  fieldWidth, fieldHeight, selectedId, onSelect, onDelete, onEdit, onMove, onResizePreview, onResizeCommit,
 }) {
   const textTool = tool === 'text'
+  const moveMode = tool === 'none'
   return (
     <Layer x={x} y={y}>
-      {entries.map(({ annotation, scope, frameIndex }) =>
-        renderAnnotation(annotation, {
+      {entries.map(({ annotation, scope, frameIndex }) => {
+        // 拖句柄改尺寸时按预览坐标渲染（不入 store/历史）
+        const anno = dragPreview?.id === annotation.id ? { ...annotation, ...dragPreview.patch } : annotation
+        return renderAnnotation(anno, {
           fieldWidth,
           fieldHeight,
           selected: annotation.id === selectedId,
+          // 文字工具下，形状/箭头不监听点击 → 让点击穿透到 Stage 放文字；文字标注始终监听（双击编辑）。
+          listening: annotation.type === 'text' ? true : !textTool,
+          // 选择工具下才可拖动移动
+          draggable: moveMode,
           onSelect,
           onDelete: () => onDelete(scope, frameIndex, annotation.id),
           onEdit: () => onEdit?.(scope, frameIndex, annotation),
-          // 文字工具下，形状/箭头不监听点击 → 让点击穿透到 Stage，可在图形内部放置文字；
-          // 文字标注始终监听（保留双击编辑）。
-          listening: annotation.type === 'text' ? true : !textTool,
+          onMoveCommit: (patch) => onMove?.(scope, frameIndex, annotation.id, patch),
+          onResizePreview: (patch) => onResizePreview?.(annotation.id, patch),
+          onResizeCommit: (patch) => onResizeCommit?.(scope, frameIndex, annotation.id, patch),
         })
-      )}
+      })}
       {draft && draftType !== 'text' &&
         renderAnnotation(
           { id: '__draft__', type: draftType, variant: draftVariant, color: draftColor, ...draft },
