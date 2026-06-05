@@ -484,3 +484,29 @@ test('setTrajectoryCtrl 给飞盘设控制点；undo 恢复', () => {
   act(() => result.current.undo())
   expect(result.current.board.data.frames[0].discStates['disc-1'].ctrl).toBeUndefined()
 })
+
+test('updateFramePlayerState 保留已设的 ctrl（拖动球员不丢曲线）', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.setTrajectoryCtrl(0, 'player', 'r1', { x: 0.5, y: 0.9 }))
+  act(() => result.current.updateFramePlayerState(0, 'r1', { x: 0.3, y: 0.4, orientation: 0 }))
+  expect(result.current.board.data.frames[0].playerStates.r1.ctrl).toEqual({ x: 0.5, y: 0.9 })
+  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.3)
+})
+
+test('updateFrameDiscState 保留已设的 ctrl（拖动飞盘不丢曲线）', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.setTrajectoryCtrl(0, 'disc', 'disc-1', { x: 0.5, y: 0.9 }))
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.3, y: 0.4 }))
+  expect(result.current.board.data.frames[0].discStates['disc-1'].ctrl).toEqual({ x: 0.5, y: 0.9 })
+  expect(result.current.board.data.frames[0].discStates['disc-1'].x).toBe(0.3)
+})
+
+test('insertFrameAfter 不让新帧继承 ctrl（避免凭空曲线）', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.setTrajectoryCtrl(0, 'player', 'r1', { x: 0.5, y: 0.9 }))
+  act(() => result.current.insertFrameAfter(0))
+  expect(result.current.board.data.frames[1].playerStates.r1.ctrl).toBeUndefined()
+})

@@ -353,7 +353,7 @@ export default function BoardCanvas() {
             tool={tool}
             scope={scope}
             color={color}
-            onToolChange={(t) => { setTool(t); setSelectedAnnoId(null); endingTextRef.current = false }}
+            onToolChange={(t) => { setTool(t); setSelectedAnnoId(null); setSelectedElement(null); endingTextRef.current = false }}
             onScopeChange={setScope}
             onColorChange={setColor}
           />
@@ -487,6 +487,7 @@ export default function BoardCanvas() {
                   if (!cur || !next) return null
                   return (
                     <TrajectoryHandle
+                      key={`${kind}-${id}`}
                       p0={{ x: cur.x, y: cur.y }}
                       p1={{ x: next.x, y: next.y }}
                       ctrl={cur.ctrl ?? null}

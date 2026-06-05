@@ -44,7 +44,7 @@ const useBoardStore = create((set) => ({
   updateFramePlayerState: (frameIndex, playerId, state) => set((s) => {
     const frames = s.board.data.frames.map((f, i) =>
       i === frameIndex
-        ? { ...f, playerStates: { ...f.playerStates, [playerId]: state } }
+        ? { ...f, playerStates: { ...f.playerStates, [playerId]: { ...f.playerStates[playerId], ...state } } }
         : f
     )
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
@@ -52,7 +52,7 @@ const useBoardStore = create((set) => ({
 
   updateFrameDiscState: (frameIndex, discId, state) => set((s) => {
     const frames = s.board.data.frames.map((f, i) =>
-      i === frameIndex ? { ...f, discStates: { ...f.discStates, [discId]: state } } : f
+      i === frameIndex ? { ...f, discStates: { ...f.discStates, [discId]: { ...f.discStates[discId], ...state } } } : f
     )
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
   }),
@@ -100,6 +100,8 @@ const useBoardStore = create((set) => ({
       id: `frame-${Date.now()}`,
       annotations: [],
     }
+    for (const pid in newFrame.playerStates) delete newFrame.playerStates[pid].ctrl
+    for (const did in (newFrame.discStates ?? {})) delete newFrame.discStates[did].ctrl
     const next = [...frames.slice(0, index + 1), newFrame, ...frames.slice(index + 1)]
     const newIndex = index + 1
     return withHistory(s, {
