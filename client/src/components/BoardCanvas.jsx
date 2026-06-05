@@ -13,6 +13,7 @@ import AnnotationToolbar from './AnnotationToolbar'
 import AnnotationLayer from './AnnotationLayer'
 import TrajectoryHandle from './TrajectoryHandle'
 import SelectionToolbar from './SelectionToolbar'
+import CurveToggleButton from './CurveToggleButton'
 import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
 import {
   visibleAnnotations, createArrowAnnotation, createRectAnnotation, createEllipseAnnotation, createTextAnnotation,
@@ -81,6 +82,7 @@ export default function BoardCanvas() {
   const [draft, setDraft] = useState(null)       // { x1, y1, x2, y2 } 归一化
   const [selectedAnnoId, setSelectedAnnoId] = useState(null)
   const [selectedElement, setSelectedElement] = useState(null) // { kind:'player'|'disc', id } | null
+  const [editingCurve, setEditingCurve] = useState(false)
   const [color, setColor] = useState(DEFAULT_ANNO_COLOR)
   const [textDraft, setTextDraft] = useState(null) // { x, y } 归一化；非 null 时显示内联输入框
   const [dragPreview, setDragPreview] = useState(null) // { id, patch }：拖句柄改尺寸的本地预览，不入历史
@@ -108,6 +110,8 @@ export default function BoardCanvas() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [undo, redo])
+
+  useEffect(() => { setEditingCurve(false) }, [selectedElement])
 
   const { saveStatus, retryNow } = useAutoSave({ board, isDirty, markClean })
 
@@ -250,6 +254,20 @@ export default function BoardCanvas() {
     if (toScope === 'frame') moveAnnotation('global', null, 'frame', currentFrameIndex, sel.annotation.id)
     else moveAnnotation(sel.scope, sel.frameIndex, 'global', null, sel.annotation.id)
   }
+
+  // 选中元素「本帧→下一帧」这一段（满足编辑门控且确实移动了）；否则 null
+  const curveSeg = (() => {
+    if (!selectedElement || isPlaying || tool !== 'none' || !editable || selectedPlayerId !== null) return null
+    if (!board || editableIndex < 0 || editableIndex >= board.data.frames.length - 1) return null
+    const { kind, id } = selectedElement
+    const key = kind === 'player' ? 'playerStates' : 'discStates'
+    const cur = board.data.frames[editableIndex][key]?.[id]
+    const next = board.data.frames[editableIndex + 1][key]?.[id]
+    if (!cur || !next) return null
+    const moved = Math.abs(cur.x - next.x) > 1e-6 || Math.abs(cur.y - next.y) > 1e-6
+    if (!moved) return null
+    return { kind, id, cur, next }
+  })()
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -400,6 +418,19 @@ export default function BoardCanvas() {
             />
           )
         })()}
+        {curveSeg && (
+          <CurveToggleButton
+            active={editingCurve}
+            onToggle={() => setEditingCurve((v) => !v)}
+            style={{
+              position: 'absolute',
+              left: fieldX + curveSeg.cur.x * fieldW,
+              top: fieldY + curveSeg.cur.y * fieldH - 36,
+              transform: 'translateX(-50%)',
+              zIndex: 26,
+            }}
+          />
+        )}
         {!board || !view ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
             加载中…
@@ -478,26 +509,18 @@ export default function BoardCanvas() {
                   />
                 )
               })}
-              {selectedElement && !isPlaying && tool === 'none' && editable && selectedPlayerId === null &&
-                editableIndex < board.data.frames.length - 1 && (() => {
-                  const { kind, id } = selectedElement
-                  const key = kind === 'player' ? 'playerStates' : 'discStates'
-                  const cur = board.data.frames[editableIndex][key][id]
-                  const next = board.data.frames[editableIndex + 1][key][id]
-                  if (!cur || !next) return null
-                  return (
-                    <TrajectoryHandle
-                      key={`${kind}-${id}`}
-                      p0={{ x: cur.x, y: cur.y }}
-                      p1={{ x: next.x, y: next.y }}
-                      ctrl={cur.ctrl ?? null}
-                      fieldWidth={fieldW}
-                      fieldHeight={fieldH}
-                      onCommit={(c) => setTrajectoryCtrl(editableIndex, kind, id, c)}
-                      onClear={() => setTrajectoryCtrl(editableIndex, kind, id, null)}
-                    />
-                  )
-                })()}
+              {curveSeg && editingCurve && (
+                <TrajectoryHandle
+                  key={`${curveSeg.kind}-${curveSeg.id}`}
+                  p0={{ x: curveSeg.cur.x, y: curveSeg.cur.y }}
+                  p1={{ x: curveSeg.next.x, y: curveSeg.next.y }}
+                  ctrl={curveSeg.cur.ctrl ?? null}
+                  fieldWidth={fieldW}
+                  fieldHeight={fieldH}
+                  onCommit={(c) => setTrajectoryCtrl(editableIndex, curveSeg.kind, curveSeg.id, c)}
+                  onClear={() => setTrajectoryCtrl(editableIndex, curveSeg.kind, curveSeg.id, null)}
+                />
+              )}
             </Layer>
           </Stage>
         )}
