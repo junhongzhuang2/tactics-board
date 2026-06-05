@@ -75,21 +75,26 @@ return { playerStates, discStates }
 ```
 快照路径(无插值)同样按 id 深拷贝 `discStates`。f0/f1 盘 id 一致(加/删盘同步所有帧 + 迁移保证)。
 
-**渲染(`BoardCanvas`):** 单个 `<Disc>` 改为遍历:
+**渲染(`BoardCanvas`):** 单个 `<Disc>` 改为遍历;回调用 `useCallback` 稳定(配合 `Disc` 的 `React.memo`,见下):
 ```jsx
+const handleDiscDragEnd = useCallback(
+  (discId, state) => updateFrameDiscState(editableIndex, discId, state),
+  [updateFrameDiscState, editableIndex]
+)
+const handleDiscRemove = useCallback((discId) => removeDisc(discId), [removeDisc])
+...
 {board.data.discs.map((d) => {
   const ds = view.discStates[d.id]
   if (!ds) return null
   return (
-    <Disc key={d.id} discState={ds} fieldWidth={fieldW} fieldHeight={fieldH}
-      onDragEnd={(s) => updateFrameDiscState(editableIndex, d.id, s)}
-      onContextMenu={() => removeDisc(d.id)} />
+    <Disc key={d.id} discId={d.id} discState={ds} fieldWidth={fieldW} fieldHeight={fieldH}
+      onDragEnd={handleDiscDragEnd} onContextMenu={handleDiscRemove} />
   )
 })}
 ```
-其余传参/draggable 门控按现有单盘 Disc 的实际写法对齐(计划阶段读准)。
+**空盘安全:** `discs` 为 `[]` 时 `map` 返回空、不碰 `view.discStates`;`interpolate` 对空 `discStates` 返回 `{}`——遍历渲染干净返回空,无 undefined/解构报错。其余传参/draggable 门控按现有单盘 Disc 的实际写法对齐(计划阶段读准)。
 
-**`Disc` 组件:** 新增可选 `onContextMenu` prop,最外层 `Group` 上 `onContextMenu={(e) => { e.evt.preventDefault(); onContextMenu?.() }}`(右键删盘,与标注右键删同手势)。其余不变。
+**`Disc` 组件:** 改为接收 `discId`;`onDragEnd(discId, newState)`、`onContextMenu(discId)`(最外层 `Group` 上 `onContextMenu={(e) => { e.evt.preventDefault(); onContextMenu?.(discId) }}`,右键删盘,与标注右键删同手势)。**用 `React.memo` 包裹导出**——配合上面稳定的回调,拖动某个盘提交(`dragEnd` 单次 setState)时,未拖动的盘按 props 不变跳过重绘。注意:播放中每个盘 `discState` 每帧都变,`memo` 本就不跳过(符合预期);此优化主要作用于非播放的拖动/编辑场景,在 ≤14 个轻量盘规模下收益有限但无害,符合纯展示组件惯例。
 
 ## 7. 加盘按钮
 
@@ -102,7 +107,9 @@ return { playerStates, discStates }
 **单测(TDD):**
 - `normalizeBoardData`:旧 `discState` → `discStates['disc-1']` + 补 `discs`;多帧都迁移;已是新结构幂等;不可变。
 - store:`addDisc`(discs+1、每帧 discStates 加该 id、记历史)、`removeDisc`(discs/每帧同步删)、`updateFrameDiscState(frameIndex, discId, state)`(per-id)。
-- `interpolate`:两帧多个 discStates 按 id 各自 lerp。
+- **下限安全**:连续 `removeDisc` 直至清空 → 断言 `board.data.discs` 为 `[]`、每帧 `discStates` 为 `{}`,且过程不抛错(空盘不崩)。
+- **破坏性变更对齐**:`updateFrameDiscState` 签名从 `(frameIndex, state)` → `(frameIndex, discId, state)`,**先**把现有 Phase1 单测调用补上 `'disc-1'` 参数(红→绿对齐),**再**改实现,确保测试底座始终全绿。
+- `interpolate`:两帧多个 discStates 按 id 各自 lerp;空 `discStates` 返回 `{}` 不崩。
 
 **人工冒烟:**
 1. 点「+盘」新增盘(中心错开),拖多个盘各自移动。
