@@ -11,10 +11,11 @@ import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
 import AnnotationToolbar from './AnnotationToolbar'
 import AnnotationLayer from './AnnotationLayer'
+import SelectionToolbar from './SelectionToolbar'
 import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
 import {
   visibleAnnotations, createArrowAnnotation, createRectAnnotation, createEllipseAnnotation, createTextAnnotation,
-  arrowPixelLength, MIN_SHAPE_PX, DEFAULT_ANNO_COLOR, DEFAULT_FONT_PX,
+  arrowPixelLength, MIN_SHAPE_PX, DEFAULT_ANNO_COLOR, DEFAULT_FONT_PX, annotationTopAnchor,
 } from '../utils/annotations'
 import { useAutoSave } from '../hooks/useAutoSave'
 import { isUndoShortcut, isRedoShortcut } from '../utils/shortcuts'
@@ -68,7 +69,7 @@ export default function BoardCanvas() {
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone, renameBoard,
-    addAnnotation, removeAnnotation, updateAnnotation,
+    addAnnotation, removeAnnotation, updateAnnotation, moveAnnotation,
   } = useBoardStore()
 
   usePlaybackEngine()
@@ -229,6 +230,15 @@ export default function BoardCanvas() {
     setDragPreview(null)
   }
 
+  // 浮动工具条「本帧/全局」切换
+  function handleSetScope(toScope) {
+    const sel = selectionRef.current
+    if (!sel || toScope === sel.scope) return
+    if (toScope === 'frame' && !editable) return // 兜底：非关键帧不能转本帧，防标注锁死
+    if (toScope === 'frame') moveAnnotation('global', null, 'frame', currentFrameIndex, sel.annotation.id)
+    else moveAnnotation(sel.scope, sel.frameIndex, 'global', null, sel.annotation.id)
+  }
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* 顶栏 */}
@@ -344,6 +354,25 @@ export default function BoardCanvas() {
             }}
           />
         )}
+        {selectedAnnoId && selectionRef.current && (() => {
+          const sel = selectionRef.current
+          const anchor = annotationTopAnchor(sel.annotation)
+          return (
+            <SelectionToolbar
+              scope={sel.scope}
+              canMoveToFrame={editable}
+              onSetScope={handleSetScope}
+              onDelete={() => { removeAnnotation(sel.scope, sel.frameIndex, sel.annotation.id); setSelectedAnnoId(null) }}
+              style={{
+                position: 'absolute',
+                left: fieldX + anchor.x * fieldW,
+                top: fieldY + anchor.y * fieldH - 40,
+                transform: 'translateX(-50%)',
+                zIndex: 25,
+              }}
+            />
+          )
+        })()}
         {!board || !view ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
             加载中…
