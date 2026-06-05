@@ -133,7 +133,7 @@ export default function BoardCanvas() {
     (discId, state) => updateFrameDiscState(editableIndex, discId, state),
     [updateFrameDiscState, editableIndex]
   )
-  const handleDiscRemove = useCallback((discId) => removeDisc(discId), [removeDisc])
+  const handleDiscRemove = useCallback((discId) => { removeDisc(discId); setSelectedElement(null) }, [removeDisc])
 
   function pointerToNorm(e) {
     const stage = e.target.getStage()
@@ -456,7 +456,7 @@ export default function BoardCanvas() {
                     onDragEnd={(id, newState) =>
                       updateFramePlayerState(editableIndex, id, newState)
                     }
-                    onDoubleClick={(id) => setSelectedPlayerId(id)}
+                    onDoubleClick={(id) => { setSelectedPlayerId(id); setSelectedElement(null) }}
                     onSelect={handleSelectPlayer}
                   />
                 )
