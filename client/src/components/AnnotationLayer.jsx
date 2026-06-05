@@ -25,7 +25,7 @@ export default function AnnotationLayer({
   fieldWidth, fieldHeight, selectedId, onSelect, onDelete, onEdit, onMove, onResizePreview, onResizeCommit,
 }) {
   const textTool = tool === 'text'
-  const moveMode = tool === 'none'
+  const isSelectTool = tool === 'none'
   return (
     <Layer x={x} y={y}>
       {entries.map(({ annotation, scope, frameIndex }) => {
@@ -38,7 +38,7 @@ export default function AnnotationLayer({
           // 文字工具下，形状/箭头不监听点击 → 让点击穿透到 Stage 放文字；文字标注始终监听（双击编辑）。
           listening: annotation.type === 'text' ? true : !textTool,
           // 选择工具下才可拖动移动
-          draggable: moveMode,
+          draggable: isSelectTool,
           onSelect,
           onDelete: () => onDelete(scope, frameIndex, annotation.id),
           onEdit: () => onEdit?.(scope, frameIndex, annotation),

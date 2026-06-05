@@ -135,6 +135,7 @@ export default function BoardCanvas() {
 
   function handleStageMouseDown(e) {
     justDrewRef.current = false // 每次新交互开头清残留标志（防拖到画布外无 click 时卡住）
+    if (dragPreview) setDragPreview(null) // 清理可能残留的改尺寸预览（拖拽异常中断时）
     if (!drawing || isPlaying) return
     // 本帧标注只能停在关键帧时画：否则 currentFrameIndex 与活动帧分叉，画完即不可见
     if (scope === 'frame' && !editable) return
@@ -219,10 +220,6 @@ export default function BoardCanvas() {
     setTextDraft(null)
   }
 
-  // 移动：松手一次性提交一步（拖动中由 Konva 原生预览本体）
-  function handleMove(sc, fi, id, patch) {
-    updateAnnotation(sc, fi, id, patch)
-  }
   // 改尺寸：拖句柄时本地预览，松手提交一步
   function handleResizePreview(id, patch) {
     setDragPreview({ id, patch })
@@ -373,7 +370,7 @@ export default function BoardCanvas() {
               draftColor={color}
               tool={tool}
               dragPreview={dragPreview}
-              onMove={handleMove}
+              onMove={updateAnnotation}
               onResizePreview={handleResizePreview}
               onResizeCommit={handleResizeCommit}
               fieldWidth={fieldW}
