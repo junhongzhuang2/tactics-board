@@ -58,7 +58,11 @@ y: c ? quadraticPoint(s0.y, c.y, s1.y, t) : lerp(s0.y, s1.y, t),
 
 ## 6. 手柄 / 预览 / 清除
 
-**显示门控**:仅当 `!isPlaying` + `tool==='none'` + `editable`(停在关键帧)+ `selectedElement` 存在 + 该帧有下一帧(`editableIndex < frames.length - 1`)+ `selectedPlayerId === null`(改名面板未打开)时显示。最后一条让「单击调轨迹 / 双击改名」互斥,视觉更纯净。
+**两段式显示(修订:不再一选中就自动冒手柄):**
+- **浮动「曲线」按钮**(`CurveToggleButton`,HTML,复用浮动工具条定位 + `stopPropagation`):满足 `!isPlaying` + `tool==='none'` + `editable`(停关键帧)+ `selectedElement` 存在 + `selectedPlayerId === null`(无改名面板)+ 有下一帧(`editableIndex < frames.length - 1`)+ **该元素本帧→下一帧确实移动了**(`|Δx|>1e-6 || |Δy|>1e-6`)时,在元素上方显示。
+- **本地 `editingCurve` 布尔**:点曲线按钮切换;**仅当 `editingCurve` 为真才渲染 `TrajectoryHandle`**(虚线 + 手柄)。切换 `selectedElement` 或取消选中时 `editingCurve` 归零(`useEffect` on `selectedElement`)。
+- **「有移动」门控同时修掉「元素两帧同位置时拖手柄会出去又回原点」的 bug**:没移动 → 既无按钮也无手柄。
+- BoardCanvas 用一个派生 `curveSeg`(选中元素满足上述门控时算出 `{kind,id,key,cur,next}`,否则 null)同时驱动浮动按钮(定位用 `cur` 位置)与手柄。
 
 **新组件 `TrajectoryHandle`**(参考 `RotateHandle` 的 onPreview/onCommit 模式):
 - props:`P0`(起点帧元素 canvas 位置)、`P1`(下一帧位置)、当前 `ctrl`(canvas;无则取两端中点)、`onCommit(ctrlNorm)`、`onClear()`。
@@ -101,8 +105,9 @@ setTrajectoryCtrl(frameIndex, kind /* 'player'|'disc' */, id, ctrl /* {x,y} | nu
 - **Modify** `client/src/utils/interpolate.js` + `.test.js` — `quadraticPoint` + lerpFrames 贝塞尔分支。
 - **Modify** `client/src/store/boardStore.js` + `.test.js` — `setTrajectoryCtrl`。
 - **Create** `client/src/components/TrajectoryHandle.jsx` — 贝塞尔虚线预览 + 可拖手柄。
+- **Create** `client/src/components/CurveToggleButton.jsx` — 选中元素后浮现的「曲线」开关小按钮(HTML)。
 - **Modify** `client/src/components/Player.jsx` / `Disc.jsx` — 加 `onClick` 选中。
-- **Modify** `client/src/components/BoardCanvas.jsx` — `selectedElement` state、单击接线、`TrajectoryHandle` 渲染、`setTrajectoryCtrl` 接线、点空白清选中(人工验证)。
+- **Modify** `client/src/components/BoardCanvas.jsx` — `selectedElement` + `editingCurve` state、派生 `curveSeg`(含「有移动」判定)、浮动曲线按钮、`TrajectoryHandle` 仅在 `editingCurve` 时渲染、`setTrajectoryCtrl` 接线、点空白/切元素清选中与编辑态(人工验证)。
 
 > 无后端改动;无 DB 迁移(`ctrl` 是 data JSON 里的可选字段,旧数据无则走直线)。
 
