@@ -15,6 +15,7 @@ export default function Player({
   fieldHeight,
   onDragEnd,        // (playerId, newNormState) => void
   onDoubleClick,    // (playerId) => void
+  onSelect,         // (playerId) => void
   onRotate,         // (orientation) => void  — 仅松手时调用一次
   editable = false,
   draggable = true,
@@ -39,6 +40,8 @@ export default function Player({
       draggable={draggable}
       onDragEnd={handleDragEnd}
       onDblClick={() => onDoubleClick?.(player.id)}
+      onClick={(e) => { e.cancelBubble = true; onSelect?.(player.id) }}
+      onTap={(e) => { e.cancelBubble = true; onSelect?.(player.id) }}
     >
       {player.showCone && <ViewCone orientation={coneOrientation} color={color} />}
       <Circle radius={PLAYER_RADIUS} fill={color} stroke="#fff" strokeWidth={2} />

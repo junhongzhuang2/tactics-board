@@ -11,6 +11,7 @@ function Disc({
   fieldHeight,
   onDragEnd,      // (discId, newNormState) => void
   onContextMenu,  // (discId) => void
+  onSelect,       // (discId) => void
   draggable = true,
 }) {
   const { x: cx, y: cy } = toCanvas(discState.x, discState.y, fieldWidth, fieldHeight)
@@ -30,6 +31,8 @@ function Disc({
       draggable={draggable}
       onDragEnd={handleDragEnd}
       onContextMenu={(e) => { e.evt.preventDefault(); e.cancelBubble = true; onContextMenu?.(discId) }}
+      onClick={(e) => { e.cancelBubble = true; onSelect?.(discId) }}
+      onTap={(e) => { e.cancelBubble = true; onSelect?.(discId) }}
     >
       <Circle radius={DISC_RADIUS} fill="#f5c518" stroke="#c8a000" strokeWidth={2} />
       <Circle radius={DISC_RADIUS * 0.55} fill="transparent" stroke="#c8a000" strokeWidth={1.5} />
