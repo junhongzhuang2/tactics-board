@@ -43,13 +43,14 @@ export default function TrajectoryHandle({ p0, p1, ctrl, fieldWidth, fieldHeight
         onDragEnd={(e) => {
           e.cancelBubble = true
           const c = { x: clamp(e.target.x() / fieldWidth), y: clamp(e.target.y() / fieldHeight) }
+          e.target.position({ x: cx(c.x), y: cy(c.y) }) // 复位到 clamp 后位置（提交后由新 props 重新定位，防异步闪回）
           setPreview(null)
           onCommit(c)
         }}
         onClick={(e) => { e.cancelBubble = true }}
         onTap={(e) => { e.cancelBubble = true }}
-        onDblClick={(e) => { e.cancelBubble = true; setPreview(null); onClear() }}
-        onDblTap={(e) => { e.cancelBubble = true; setPreview(null); onClear() }}
+        onDblClick={(e) => { e.cancelBubble = true; setPreview(null); onClear?.() }}
+        onDblTap={(e) => { e.cancelBubble = true; setPreview(null); onClear?.() }}
       />
     </>
   )
