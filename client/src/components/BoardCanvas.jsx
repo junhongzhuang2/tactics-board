@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Stage, Layer } from 'react-konva'
 import Field from './Field'
@@ -65,7 +65,7 @@ export default function BoardCanvas() {
   const {
     board, currentFrameIndex, isDirty, playheadTime, isPlaying, loop,
     past, future, undo, redo,
-    updateFramePlayerState, updateFrameDiscState,
+    updateFramePlayerState, updateFrameDiscState, addDisc, removeDisc,
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone, renameBoard,
@@ -123,6 +123,12 @@ export default function BoardCanvas() {
     const next = Math.max(0, Math.min(frames.length - 1, currentFrameIndex + dir))
     setCurrentFrame(next)
   }
+
+  const handleDiscDragEnd = useCallback(
+    (discId, state) => updateFrameDiscState(editableIndex, discId, state),
+    [updateFrameDiscState, editableIndex]
+  )
+  const handleDiscRemove = useCallback((discId) => removeDisc(discId), [removeDisc])
 
   function pointerToNorm(e) {
     const stage = e.target.getStage()
@@ -299,6 +305,21 @@ export default function BoardCanvas() {
             onRedo={redo}
           />
         )}
+        {board && (
+          <button
+            onClick={addDisc}
+            disabled={isPlaying}
+            title="加一个飞盘"
+            style={{
+              padding: '4px 10px', height: 28, borderRadius: 6,
+              background: '#2a2a3e', border: '1px solid #555', color: '#ccc',
+              fontSize: 13, cursor: isPlaying ? 'default' : 'pointer',
+              opacity: isPlaying ? 0.5 : 1,
+            }}
+          >
+            + 盘
+          </button>
+        )}
         {board && saveStatus === 'saving' && (
           <span style={{ fontSize: 12, color: '#888' }}>保存中…</span>
         )}
@@ -433,15 +454,22 @@ export default function BoardCanvas() {
                   />
                 )
               })}
-              <Disc
-                discState={view.discState}
-                fieldWidth={fieldW}
-                fieldHeight={fieldH}
-                draggable={editable && !drawing}
-                onDragEnd={(newState) =>
-                  updateFrameDiscState(editableIndex, newState)
-                }
-              />
+              {board.data.discs.map((d) => {
+                const ds = view.discStates[d.id]
+                if (!ds) return null
+                return (
+                  <Disc
+                    key={d.id}
+                    discId={d.id}
+                    discState={ds}
+                    fieldWidth={fieldW}
+                    fieldHeight={fieldH}
+                    draggable={editable && !drawing}
+                    onDragEnd={handleDiscDragEnd}
+                    onContextMenu={handleDiscRemove}
+                  />
+                )
+              })}
             </Layer>
           </Stage>
         )}
