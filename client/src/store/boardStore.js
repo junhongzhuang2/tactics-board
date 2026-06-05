@@ -72,7 +72,7 @@ const useBoardStore = create((set) => ({
     const data = s.board.data
     const discs = data.discs.filter((d) => d.id !== discId)
     const frames = data.frames.map((f) => {
-      const { [discId]: _removed, ...rest } = f.discStates
+      const { [discId]: _removed, ...rest } = f.discStates ?? {}
       return { ...f, discStates: rest }
     })
     return withHistory(s, { board: { ...s.board, data: { ...data, discs, frames } }, isDirty: true })
