@@ -464,3 +464,23 @@ test('setBoard 迁移旧单盘 discState 为 discStates（集成）', () => {
   expect(result.current.board.data.frames[0].discStates['disc-1']).toEqual({ x: 0.5, y: 0.5 })
   expect(result.current.board.data.frames[0].discState).toBeUndefined()
 })
+
+test('setTrajectoryCtrl 给球员设控制点并记历史；传 null 删除回直线', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.setTrajectoryCtrl(0, 'player', 'r1', { x: 0.5, y: 0.9 }))
+  expect(result.current.board.data.frames[0].playerStates.r1.ctrl).toEqual({ x: 0.5, y: 0.9 })
+  expect(result.current.isDirty).toBe(true)
+  expect(result.current.past.length).toBe(1)
+  act(() => result.current.setTrajectoryCtrl(0, 'player', 'r1', null))
+  expect(result.current.board.data.frames[0].playerStates.r1.ctrl).toBeUndefined()
+})
+
+test('setTrajectoryCtrl 给飞盘设控制点；undo 恢复', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.setTrajectoryCtrl(0, 'disc', 'disc-1', { x: 0.3, y: 0.7 }))
+  expect(result.current.board.data.frames[0].discStates['disc-1'].ctrl).toEqual({ x: 0.3, y: 0.7 })
+  act(() => result.current.undo())
+  expect(result.current.board.data.frames[0].discStates['disc-1'].ctrl).toBeUndefined()
+})

@@ -57,6 +57,20 @@ const useBoardStore = create((set) => ({
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
   }),
 
+  setTrajectoryCtrl: (frameIndex, kind, id, ctrl) => set((s) => {
+    const key = kind === 'player' ? 'playerStates' : 'discStates'
+    const frames = s.board.data.frames.map((f, i) => {
+      if (i !== frameIndex) return f
+      const states = { ...f[key] }
+      const el = { ...states[id] }
+      if (ctrl) el.ctrl = ctrl
+      else delete el.ctrl
+      states[id] = el
+      return { ...f, [key]: states }
+    })
+    return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
+  }),
+
   addDisc: () => set((s) => {
     const data = s.board.data
     const id = `disc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
