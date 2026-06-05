@@ -399,6 +399,7 @@ export default function BoardCanvas() {
               draftColor={color}
               tool={tool}
               dragPreview={dragPreview}
+              isPlaying={isPlaying}
               onMove={updateAnnotation}
               onResizePreview={handleResizePreview}
               onResizeCommit={handleResizeCommit}

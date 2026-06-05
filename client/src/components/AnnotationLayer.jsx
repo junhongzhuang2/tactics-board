@@ -21,11 +21,12 @@ function renderAnnotation(annotation, props) {
 
 // 渲染「全局 + 活动帧」标注（entries）+ 绘制预览（draft）。
 export default function AnnotationLayer({
-  x, y, entries, draft, draftType, draftVariant, draftColor, tool, dragPreview,
+  x, y, entries, draft, draftType, draftVariant, draftColor, tool, dragPreview, isPlaying,
   fieldWidth, fieldHeight, selectedId, onSelect, onDelete, onEdit, onMove, onResizePreview, onResizeCommit,
 }) {
   const textTool = tool === 'text'
   const isSelectTool = tool === 'none'
+  const interactive = isSelectTool && !isPlaying // 播放中不可移动/改尺寸（与球员/飞盘一致）
   return (
     <Layer x={x} y={y}>
       {entries.map(({ annotation, scope, frameIndex }) => {
@@ -38,13 +39,13 @@ export default function AnnotationLayer({
           // 文字工具下，形状/箭头不监听点击 → 让点击穿透到 Stage 放文字；文字标注始终监听（双击编辑）。
           listening: annotation.type === 'text' ? true : !textTool,
           // 选择工具下才可拖动移动
-          draggable: isSelectTool,
+          draggable: interactive,
           onSelect,
           onDelete: () => onDelete(scope, frameIndex, annotation.id),
           onEdit: () => onEdit?.(scope, frameIndex, annotation),
           onMoveCommit: (patch) => onMove?.(scope, frameIndex, annotation.id, patch),
-          onResizePreview: (patch) => onResizePreview?.(annotation.id, patch),
-          onResizeCommit: (patch) => onResizeCommit?.(scope, frameIndex, annotation.id, patch),
+          onResizePreview: interactive ? (patch) => onResizePreview?.(annotation.id, patch) : undefined,
+          onResizeCommit: interactive ? (patch) => onResizeCommit?.(scope, frameIndex, annotation.id, patch) : undefined,
         })
       })}
       {draft && draftType !== 'text' &&
