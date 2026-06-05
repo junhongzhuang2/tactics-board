@@ -33,11 +33,12 @@ export function createDefaultBoardData() {
       { id: 'b6', team: 'blue', number: 6, name: '6', showCone: false },
       { id: 'b7', team: 'blue', number: 7, name: '7', showCone: false },
     ],
+    discs: [{ id: 'disc-1' }],
     frames: [{
       id: 'frame-0',
       duration: 1000,
       playerStates: { ...DEFAULT_PLAYER_STATES },
-      discState: { x: 0.50, y: 0.50 },
+      discStates: { 'disc-1': { x: 0.50, y: 0.50 } },
       annotations: [],
     }],
     globalAnnotations: [],
