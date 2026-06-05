@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { frameStartTimes, totalDuration } from '../utils/interpolate'
+import { normalizeBoardData } from '../utils/normalizeBoardData'
 
 const MIN_DURATION = 100
 const HISTORY_LIMIT = 200
@@ -29,7 +30,8 @@ const useBoardStore = create((set) => ({
   future: [],
 
   setBoard: (board) => set({
-    board, currentFrameIndex: 0, isDirty: false,
+    board: { ...board, data: normalizeBoardData(board.data) },
+    currentFrameIndex: 0, isDirty: false,
     isPlaying: false, playheadTime: 0, loop: false,
     past: [], future: [],
   }),
@@ -48,11 +50,32 @@ const useBoardStore = create((set) => ({
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
   }),
 
-  updateFrameDiscState: (frameIndex, discState) => set((s) => {
+  updateFrameDiscState: (frameIndex, discId, state) => set((s) => {
     const frames = s.board.data.frames.map((f, i) =>
-      i === frameIndex ? { ...f, discState } : f
+      i === frameIndex ? { ...f, discStates: { ...f.discStates, [discId]: state } } : f
     )
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
+  }),
+
+  addDisc: () => set((s) => {
+    const data = s.board.data
+    const id = `disc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const n = data.discs.length
+    const clamp = (v) => Math.min(1, Math.max(0, v))
+    const pos = { x: clamp(0.5 + n * 0.04), y: clamp(0.5 + n * 0.04) }
+    const discs = [...data.discs, { id }]
+    const frames = data.frames.map((f) => ({ ...f, discStates: { ...f.discStates, [id]: pos } }))
+    return withHistory(s, { board: { ...s.board, data: { ...data, discs, frames } }, isDirty: true })
+  }),
+
+  removeDisc: (discId) => set((s) => {
+    const data = s.board.data
+    const discs = data.discs.filter((d) => d.id !== discId)
+    const frames = data.frames.map((f) => {
+      const { [discId]: _removed, ...rest } = f.discStates
+      return { ...f, discStates: rest }
+    })
+    return withHistory(s, { board: { ...s.board, data: { ...data, discs, frames } }, isDirty: true })
   }),
 
   insertFrameAfter: (index) => set((s) => {

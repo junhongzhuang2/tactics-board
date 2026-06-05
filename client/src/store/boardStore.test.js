@@ -57,8 +57,8 @@ test('updateFramePlayerState updates position and marks dirty', () => {
 test('updateFrameDiscState updates disc position', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
-  expect(result.current.board.data.frames[0].discState.x).toBe(0.7)
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 }))
+  expect(result.current.board.data.frames[0].discStates['disc-1'].x).toBe(0.7)
   expect(result.current.isDirty).toBe(true)
 })
 
@@ -213,7 +213,7 @@ test('history caps at 200 entries', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
   for (let i = 0; i < 201; i++) {
-    act(() => result.current.updateFrameDiscState(0, { x: (i % 100) / 100, y: 0.5 }))
+    act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: (i % 100) / 100, y: 0.5 }))
   }
   expect(result.current.past.length).toBe(200)
 })
@@ -221,7 +221,7 @@ test('history caps at 200 entries', () => {
 test('setBoard clears history', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 }))
   expect(result.current.past.length).toBe(1)
   act(() => result.current.setBoard(makeBoard()))
   expect(result.current.past).toEqual([])
@@ -240,10 +240,10 @@ test('history snapshot is not mutated by subsequent edits (immutability guard)',
 test('undo restores previous data and moves current to future', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard())) // disc x = 0.5
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
-  expect(result.current.board.data.frames[0].discState.x).toBe(0.7)
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 }))
+  expect(result.current.board.data.frames[0].discStates['disc-1'].x).toBe(0.7)
   act(() => result.current.undo())
-  expect(result.current.board.data.frames[0].discState.x).toBe(0.5)
+  expect(result.current.board.data.frames[0].discStates['disc-1'].x).toBe(0.5)
   expect(result.current.past.length).toBe(0)
   expect(result.current.future.length).toBe(1)
 })
@@ -251,10 +251,10 @@ test('undo restores previous data and moves current to future', () => {
 test('redo reapplies an undone change and empties future', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 }))
   act(() => result.current.undo())
   act(() => result.current.redo())
-  expect(result.current.board.data.frames[0].discState.x).toBe(0.7)
+  expect(result.current.board.data.frames[0].discStates['disc-1'].x).toBe(0.7)
   expect(result.current.future).toEqual([])
   expect(result.current.past.length).toBe(1)
 })
@@ -262,10 +262,10 @@ test('redo reapplies an undone change and empties future', () => {
 test('a new edit after undo clears the redo stack', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 }))
   act(() => result.current.undo())
   expect(result.current.future.length).toBe(1)
-  act(() => result.current.updateFrameDiscState(0, { x: 0.3, y: 0.3 }))
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.3, y: 0.3 }))
   expect(result.current.future).toEqual([])
 })
 
@@ -274,7 +274,7 @@ test('undo and redo are no-ops on empty stacks', () => {
   act(() => result.current.setBoard(makeBoard()))
   act(() => result.current.undo())
   expect(result.current.past).toEqual([])
-  expect(result.current.board.data.frames[0].discState.x).toBe(0.5)
+  expect(result.current.board.data.frames[0].discStates['disc-1'].x).toBe(0.5)
   act(() => result.current.redo())
   expect(result.current.future).toEqual([])
 })
@@ -300,13 +300,13 @@ test('undo restores the frame index and playhead where the edit happened', () =>
 test('markClean (autosave) does not pollute history; redo survives', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 }))
   act(() => result.current.undo())
   expect(result.current.future.length).toBe(1)
   act(() => result.current.markClean()) // simulate autosave
   expect(result.current.future.length).toBe(1) // not polluted
   act(() => result.current.redo())
-  expect(result.current.board.data.frames[0].discState.x).toBe(0.7) // redo still works
+  expect(result.current.board.data.frames[0].discStates['disc-1'].x).toBe(0.7) // redo still works
 })
 
 test('setPlayerShowCone toggles showCone and records history', () => {
@@ -329,7 +329,7 @@ test('redo lands the playhead on a keyframe (editable), even after scrubbing bef
   })
   act(() => result.current.setBoard(board))
   // edit at frame 0 (playhead 0 = keyframe)
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 }))
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 }))
   // scrub to a non-keyframe position (between frame 0 @0 and frame 1 @1000)
   act(() => result.current.setPlayhead(400))
   act(() => result.current.undo())
@@ -391,7 +391,7 @@ test('updateAnnotation 合并 patch（global scope）', () => {
 test('renameBoard sets the board name and marks dirty without touching history', () => {
   const { result } = renderHook(() => useBoardStore())
   act(() => result.current.setBoard(makeBoard()))
-  act(() => result.current.updateFrameDiscState(0, { x: 0.7, y: 0.2 })) // 制造一条历史
+  act(() => result.current.updateFrameDiscState(0, 'disc-1', { x: 0.7, y: 0.2 })) // 制造一条历史
   const pastLenBefore = result.current.past.length
   act(() => result.current.renameBoard('新名字'))
   expect(result.current.board.name).toBe('新名字')
@@ -418,4 +418,41 @@ test('moveAnnotation 全局→本帧：从 global 移除、加入目标帧', () 
   act(() => result.current.moveAnnotation('global', null, 'frame', 0, 'g9'))
   expect(result.current.board.data.globalAnnotations.find(a => a.id === 'g9')).toBeUndefined()
   expect(result.current.board.data.frames[0].annotations.find(a => a.id === 'g9')).toBeTruthy()
+})
+
+test('addDisc 给所有帧加一个盘并记历史', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  const before = result.current.board.data.discs.length
+  act(() => result.current.addDisc())
+  expect(result.current.board.data.discs.length).toBe(before + 1)
+  const newId = result.current.board.data.discs[result.current.board.data.discs.length - 1].id
+  for (const f of result.current.board.data.frames) {
+    expect(f.discStates[newId]).toBeDefined()
+  }
+  expect(result.current.isDirty).toBe(true)
+  expect(result.current.past.length).toBe(1)
+})
+
+test('removeDisc 从所有帧删一个盘', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.removeDisc('disc-1'))
+  expect(result.current.board.data.discs.find(d => d.id === 'disc-1')).toBeUndefined()
+  for (const f of result.current.board.data.frames) {
+    expect(f.discStates['disc-1']).toBeUndefined()
+  }
+})
+
+test('连续 removeDisc 删到空：discs 为空数组、每帧 discStates 为空，且不崩', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard(makeBoard()))
+  act(() => result.current.addDisc())
+  const ids = result.current.board.data.discs.map(d => d.id)
+  act(() => result.current.removeDisc(ids[0]))
+  act(() => result.current.removeDisc(ids[1]))
+  expect(result.current.board.data.discs).toEqual([])
+  for (const f of result.current.board.data.frames) {
+    expect(f.discStates).toEqual({})
+  }
 })
