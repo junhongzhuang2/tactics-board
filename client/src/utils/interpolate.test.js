@@ -1,4 +1,4 @@
-import { frameStartTimes, totalDuration } from './interpolate'
+import { frameStartTimes, totalDuration, quadraticPoint } from './interpolate'
 
 const frames = [
   { id: 'f0', duration: 1000 },
@@ -160,4 +160,40 @@ test('durationFromDrag floors at minimum 100ms', () => {
 
 test('durationFromDrag rounds to integer ms', () => {
   expect(durationFromDrag(1000, 3, 3.33)).toBe(1010) // 1000 + 9.99 -> 1010
+})
+
+test('quadraticPoint 端点、ctrl=中点退化直线、ctrl 偏离', () => {
+  expect(quadraticPoint(0, 0.5, 1, 0)).toBeCloseTo(0)
+  expect(quadraticPoint(0, 0.5, 1, 1)).toBeCloseTo(1)
+  expect(quadraticPoint(0, 0.5, 1, 0.5)).toBeCloseTo(0.5)
+  expect(quadraticPoint(0, 1, 0, 0.5)).toBeCloseTo(0.5)
+})
+
+test('lerpFrames 有 ctrl 时球员走二次贝塞尔（中点偏离直线）', () => {
+  const frames = [
+    { id: 'f0', duration: 1000, playerStates: { r1: { x: 0, y: 0, orientation: 0, ctrl: { x: 0.5, y: 1 } } }, discStates: {} },
+    { id: 'f1', duration: 0, playerStates: { r1: { x: 1, y: 0, orientation: 0 } }, discStates: {} },
+  ]
+  const v = interpolateAt(frames, 500)
+  expect(v.playerStates.r1.x).toBeCloseTo(0.5)
+  expect(v.playerStates.r1.y).toBeCloseTo(0.5)
+})
+
+test('lerpFrames 无 ctrl 时仍走直线（回归）', () => {
+  const frames = [
+    { id: 'f0', duration: 1000, playerStates: { r1: { x: 0, y: 0, orientation: 0 } }, discStates: {} },
+    { id: 'f1', duration: 0, playerStates: { r1: { x: 1, y: 1, orientation: 0 } }, discStates: {} },
+  ]
+  const v = interpolateAt(frames, 500)
+  expect(v.playerStates.r1.x).toBeCloseTo(0.5)
+  expect(v.playerStates.r1.y).toBeCloseTo(0.5)
+})
+
+test('lerpFrames 飞盘也支持 ctrl 曲线', () => {
+  const frames = [
+    { id: 'f0', duration: 1000, playerStates: {}, discStates: { 'disc-1': { x: 0, y: 0, ctrl: { x: 0.5, y: 1 } } } },
+    { id: 'f1', duration: 0, playerStates: {}, discStates: { 'disc-1': { x: 1, y: 0 } } },
+  ]
+  const v = interpolateAt(frames, 500)
+  expect(v.discStates['disc-1'].y).toBeCloseTo(0.5)
 })

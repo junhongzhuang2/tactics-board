@@ -22,6 +22,11 @@ function lerp(a, b, t) {
   return a + (b - a) * t
 }
 
+export function quadraticPoint(p0, c, p1, t) {
+  const mt = 1 - t
+  return mt * mt * p0 + 2 * mt * t * c + t * t * p1
+}
+
 // 就近角度插值：把 b−a 归一化到 (−π, π] 再按 t 推进
 export function lerpAngle(a, b, t) {
   let d = (b - a) % (2 * Math.PI)
@@ -47,9 +52,10 @@ function lerpFrames(f0, f1, t) {
   for (const id in f0.playerStates) {
     const s0 = f0.playerStates[id]
     const s1 = f1.playerStates[id] ?? s0
+    const pc = s0.ctrl
     playerStates[id] = {
-      x: lerp(s0.x, s1.x, t),
-      y: lerp(s0.y, s1.y, t),
+      x: pc ? quadraticPoint(s0.x, pc.x, s1.x, t) : lerp(s0.x, s1.x, t),
+      y: pc ? quadraticPoint(s0.y, pc.y, s1.y, t) : lerp(s0.y, s1.y, t),
       orientation: lerpAngle(s0.orientation, s1.orientation, t),
     }
   }
@@ -57,7 +63,11 @@ function lerpFrames(f0, f1, t) {
   for (const id in (f0.discStates ?? {})) {
     const d0 = f0.discStates[id]
     const d1 = f1.discStates?.[id] ?? d0
-    discStates[id] = { x: lerp(d0.x, d1.x, t), y: lerp(d0.y, d1.y, t) }
+    const dc = d0.ctrl
+    discStates[id] = {
+      x: dc ? quadraticPoint(d0.x, dc.x, d1.x, t) : lerp(d0.x, d1.x, t),
+      y: dc ? quadraticPoint(d0.y, dc.y, d1.y, t) : lerp(d0.y, d1.y, t),
+    }
   }
   return { playerStates, discStates }
 }
