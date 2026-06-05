@@ -25,19 +25,19 @@ const animFrames = [
   {
     id: 'f0', duration: 1000,
     playerStates: { r1: { x: 0, y: 0, orientation: 0 } },
-    discState: { x: 0, y: 0 },
+    discStates: { 'disc-1': { x: 0, y: 0 } },
   },
   {
     id: 'f1', duration: 500,
     playerStates: { r1: { x: 1, y: 0.5, orientation: 2 } },
-    discState: { x: 1, y: 1 },
+    discStates: { 'disc-1': { x: 1, y: 1 } },
   },
 ]
 
 test('interpolateAt at frame start returns that frame exactly', () => {
   const v = interpolateAt(animFrames, 0)
   expect(v.playerStates.r1).toEqual({ x: 0, y: 0, orientation: 0 })
-  expect(v.discState).toEqual({ x: 0, y: 0 })
+  expect(v.discStates['disc-1']).toEqual({ x: 0, y: 0 })
 })
 
 test('interpolateAt at segment midpoint returns midpoint values', () => {
@@ -45,7 +45,7 @@ test('interpolateAt at segment midpoint returns midpoint values', () => {
   expect(v.playerStates.r1.x).toBeCloseTo(0.5)
   expect(v.playerStates.r1.y).toBeCloseTo(0.25)
   expect(v.playerStates.r1.orientation).toBeCloseTo(1)
-  expect(v.discState.x).toBeCloseTo(0.5)
+  expect(v.discStates['disc-1'].x).toBeCloseTo(0.5)
 })
 
 test('interpolateAt at/after total duration returns last frame static state', () => {

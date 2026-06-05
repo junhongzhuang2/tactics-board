@@ -35,7 +35,11 @@ function snapshot(frame) {
   for (const id in frame.playerStates) {
     playerStates[id] = { ...frame.playerStates[id] }
   }
-  return { playerStates, discState: { ...frame.discState } }
+  const discStates = {}
+  for (const id in (frame.discStates ?? {})) {
+    discStates[id] = { ...frame.discStates[id] }
+  }
+  return { playerStates, discStates }
 }
 
 function lerpFrames(f0, f1, t) {
@@ -49,13 +53,13 @@ function lerpFrames(f0, f1, t) {
       orientation: lerpAngle(s0.orientation, s1.orientation, t),
     }
   }
-  return {
-    playerStates,
-    discState: {
-      x: lerp(f0.discState.x, f1.discState.x, t),
-      y: lerp(f0.discState.y, f1.discState.y, t),
-    },
+  const discStates = {}
+  for (const id in (f0.discStates ?? {})) {
+    const d0 = f0.discStates[id]
+    const d1 = f1.discStates?.[id] ?? d0
+    discStates[id] = { x: lerp(d0.x, d1.x, t), y: lerp(d0.y, d1.y, t) }
   }
+  return { playerStates, discStates }
 }
 
 // 给定整条时间轴上的毫秒位置，返回所有元素插值后的位置
