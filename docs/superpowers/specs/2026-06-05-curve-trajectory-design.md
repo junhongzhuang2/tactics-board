@@ -58,12 +58,13 @@ y: c ? quadraticPoint(s0.y, c.y, s1.y, t) : lerp(s0.y, s1.y, t),
 
 ## 6. 手柄 / 预览 / 清除
 
-**显示门控**:仅当 `!isPlaying` + `tool==='none'` + `editable`(停在关键帧)+ `selectedElement` 存在 + 该帧有下一帧(`editableIndex < frames.length - 1`)时显示。
+**显示门控**:仅当 `!isPlaying` + `tool==='none'` + `editable`(停在关键帧)+ `selectedElement` 存在 + 该帧有下一帧(`editableIndex < frames.length - 1`)+ `selectedPlayerId === null`(改名面板未打开)时显示。最后一条让「单击调轨迹 / 双击改名」互斥,视觉更纯净。
 
 **新组件 `TrajectoryHandle`**(参考 `RotateHandle` 的 onPreview/onCommit 模式):
 - props:`P0`(起点帧元素 canvas 位置)、`P1`(下一帧位置)、当前 `ctrl`(canvas;无则取两端中点)、`onCommit(ctrlNorm)`、`onClear()`。
 - 画**二次贝塞尔虚线预览**(淡色):Konva `Shape` `sceneFunc` → `moveTo(P0); quadraticCurveTo(C, P1)`。
 - 在 `C` 处放可拖小圆手柄:拖动时组件内部 state 实时更新 `C`、虚线随动(预览,不进 store);**松手 `onCommit`** 提交一步历史;**双击手柄 `onClear`** 删 ctrl 回直线。控制点 clamp 到 `[0,1]`。
+- **事件闭环(防闪退)**:手柄圆圈的 `onClick`/`onDblClick`/拖动事件均 `e.cancelBubble = true`,阻止冒泡到 Stage——防双击清除的瞬间误触发「点空白取消选中」而手柄闪退。(与 C3 `Handle`/`SelectionToolbar` 的 stopPropagation 一脉相承。)
 
 **BoardCanvas 接线**:满足门控时,从 `board.data.frames[editableIndex]` 取选中元素位置作 `P0`、`frames[editableIndex+1]` 作 `P1`、元素 `.ctrl` 作当前 ctrl,渲染 `<TrajectoryHandle>`;`onCommit`/`onClear` 调下面的 store action。
 
@@ -91,7 +92,7 @@ setTrajectoryCtrl(frameIndex, kind /* 'player'|'disc' */, id, ctrl /* {x,y} | nu
 1. 停关键帧单击球员 → 出现「本帧→下一帧」虚线 + 中点手柄;拖手柄曲线弯、松手保存;播放时走弧线。
 2. 双击手柄回直线;单击飞盘同样可调。
 3. 撤销/重做覆盖设/清 ctrl;点空白取消选中、手柄消失。
-4. 非关键帧 / 播放中 / 最后一帧 → 不显示手柄。
+4. 非关键帧 / 播放中 / 最后一帧 / 双击球员开着改名面板时 → 不显示手柄;双击手柄清除曲率时手柄不闪退(事件 cancelBubble)。
 5. 走弧线时朝向仍按手设值插值(不沿切线)。
 6. 旧战术板(无 ctrl)仍直线、正常;操作后约 1 秒「已保存」、刷新后 ctrl 保留。
 
