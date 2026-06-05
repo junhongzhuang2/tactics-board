@@ -11,6 +11,7 @@ import { useBoardStore } from '../store/boardStore'
 import { usePlaybackEngine } from '../hooks/usePlaybackEngine'
 import AnnotationToolbar from './AnnotationToolbar'
 import AnnotationLayer from './AnnotationLayer'
+import TrajectoryHandle from './TrajectoryHandle'
 import SelectionToolbar from './SelectionToolbar'
 import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
 import {
@@ -65,7 +66,7 @@ export default function BoardCanvas() {
   const {
     board, currentFrameIndex, isDirty, playheadTime, isPlaying, loop,
     past, future, undo, redo,
-    updateFramePlayerState, updateFrameDiscState, addDisc, removeDisc,
+    updateFramePlayerState, updateFrameDiscState, addDisc, removeDisc, setTrajectoryCtrl,
     insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone, renameBoard,
@@ -79,6 +80,7 @@ export default function BoardCanvas() {
   const [scope, setScope] = useState('frame')    // 'frame' | 'global'
   const [draft, setDraft] = useState(null)       // { x1, y1, x2, y2 } 归一化
   const [selectedAnnoId, setSelectedAnnoId] = useState(null)
+  const [selectedElement, setSelectedElement] = useState(null) // { kind:'player'|'disc', id } | null
   const [color, setColor] = useState(DEFAULT_ANNO_COLOR)
   const [textDraft, setTextDraft] = useState(null) // { x, y } 归一化；非 null 时显示内联输入框
   const [dragPreview, setDragPreview] = useState(null) // { id, patch }：拖句柄改尺寸的本地预览，不入历史
@@ -123,6 +125,9 @@ export default function BoardCanvas() {
     const next = Math.max(0, Math.min(frames.length - 1, currentFrameIndex + dir))
     setCurrentFrame(next)
   }
+
+  const handleSelectPlayer = useCallback((id) => setSelectedElement({ kind: 'player', id }), [])
+  const handleSelectDisc = useCallback((id) => setSelectedElement({ kind: 'disc', id }), [])
 
   const handleDiscDragEnd = useCallback(
     (discId, state) => updateFrameDiscState(editableIndex, discId, state),
@@ -192,6 +197,7 @@ export default function BoardCanvas() {
     }
     if (tool === 'none' && e.target === e.target.getStage()) {
       setSelectedAnnoId(null) // 点空白取消选中
+      setSelectedElement(null)
     }
   }
 
@@ -451,6 +457,7 @@ export default function BoardCanvas() {
                       updateFramePlayerState(editableIndex, id, newState)
                     }
                     onDoubleClick={(id) => setSelectedPlayerId(id)}
+                    onSelect={handleSelectPlayer}
                   />
                 )
               })}
@@ -467,9 +474,29 @@ export default function BoardCanvas() {
                     draggable={editable && !drawing}
                     onDragEnd={handleDiscDragEnd}
                     onContextMenu={handleDiscRemove}
+                    onSelect={handleSelectDisc}
                   />
                 )
               })}
+              {selectedElement && !isPlaying && tool === 'none' && editable && selectedPlayerId === null &&
+                editableIndex < board.data.frames.length - 1 && (() => {
+                  const { kind, id } = selectedElement
+                  const key = kind === 'player' ? 'playerStates' : 'discStates'
+                  const cur = board.data.frames[editableIndex][key][id]
+                  const next = board.data.frames[editableIndex + 1][key][id]
+                  if (!cur || !next) return null
+                  return (
+                    <TrajectoryHandle
+                      p0={{ x: cur.x, y: cur.y }}
+                      p1={{ x: next.x, y: next.y }}
+                      ctrl={cur.ctrl ?? null}
+                      fieldWidth={fieldW}
+                      fieldHeight={fieldH}
+                      onCommit={(c) => setTrajectoryCtrl(editableIndex, kind, id, c)}
+                      onClear={() => setTrajectoryCtrl(editableIndex, kind, id, null)}
+                    />
+                  )
+                })()}
             </Layer>
           </Stage>
         )}
