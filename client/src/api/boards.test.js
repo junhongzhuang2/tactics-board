@@ -27,7 +27,7 @@ test('saveBoard 改 name/data 并更新 updated_at', async () => {
   const after = await getBoard(b.id)
   expect(after.name).toBe('新')
   expect(after.data).toEqual({ v: 2 })
-  expect(after.updated_at >= before).toBe(true)
+  expect(after.updated_at > before).toBe(true)
 })
 
 test('deleteBoard 删除', async () => {

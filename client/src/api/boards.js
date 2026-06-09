@@ -21,7 +21,7 @@ function now() {
 }
 
 export async function listBoards() {
-  return readAll().sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
+  return readAll().sort((a, b) => (a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0))
 }
 
 export async function getBoard(id) {
