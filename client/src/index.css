@@ -1,0 +1,63 @@
+/* —— Pitch Glow 呼吸微光背景 —— */
+.board-bg { position: relative; min-height: 100vh; }
+.board-bg::before,
+.board-bg::after {
+  content: ""; position: fixed; pointer-events: none; z-index: 0; border-radius: 50%;
+}
+.board-bg::before {
+  width: 80vw; height: 60vh; left: -10vw; top: -15vh;
+  background: radial-gradient(closest-side, rgba(255, 210, 63, 0.20), transparent 70%);
+  animation: breatheA 7s ease-in-out infinite;
+}
+.board-bg::after {
+  width: 70vw; height: 55vh; right: -15vw; bottom: -10vh;
+  background: radial-gradient(closest-side, rgba(120, 220, 180, 0.15), transparent 70%);
+  animation: breatheB 9s ease-in-out infinite;
+}
+/* 内容抬到光晕之上 */
+.board-bg > * { position: relative; z-index: 1; }
+
+@keyframes breatheA {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.90; transform: scale(1.08); }
+}
+@keyframes breatheB {
+  0%, 100% { opacity: 0.50; transform: scale(1.05); }
+  50%      { opacity: 0.85; transform: scale(1); }
+}
+
+/* —— 虚线新建卡片 —— */
+.add-card {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 12px; padding: 16px; border-radius: 11px; cursor: pointer;
+  border: 2px dashed rgba(255, 210, 63, 0.5); color: #ffd23f;
+  font-weight: 600; font-size: 14px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.add-card:hover { background: rgba(255, 210, 63, 0.10); border-color: rgba(255, 210, 63, 0.8); }
+
+/* —— 战术板卡片（毛玻璃 + 隐式边缘高亮 + hover 上浮）—— */
+.board-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; border-radius: 11px; margin-bottom: 12px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 6px 0 14px -8px rgba(255, 210, 63, 0.9);
+  transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
+}
+.board-card:hover {
+  transform: translateY(-2px); background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 6px 0 16px -7px rgba(255, 210, 63, 1), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* —— 交互式浮现：操作按钮默认半隐，卡片悬停时淡入 —— */
+.card-actions { display: flex; gap: 8px; opacity: 0.5; transition: opacity 0.25s; }
+.board-card:hover .card-actions { opacity: 1; }
+
+.card-btn {
+  font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+  background: transparent; color: #cfe7da; border: 1px solid rgba(255, 255, 255, 0.28);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.rename-btn:hover { color: #7db4ff; border-color: #7db4ff; background: rgba(30, 136, 229, 0.15); }
+.delete-btn:hover { color: #ff8a80; border-color: #ff8a80; background: rgba(229, 57, 53, 0.15); }
