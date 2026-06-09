@@ -54,7 +54,8 @@ export default defineConfig(({ command }) => ({
 ```
 (构建用子路径前缀,本地 dev 用根;删掉无用的 `server.proxy`。HashRouter 路径在 `#` 后,不受 base 影响。)
 
-**`.github/workflows/deploy.yml`(新建):** push main → 在 `client/` 里 `npm ci` + `npm run build` → `upload-pages-artifact`(path `client/dist`)→ `deploy-pages`。权限 `pages: write` / `id-token: write`,`environment: github-pages`。
+**`.github/workflows/deploy.yml`(新建):** push main → `actions/setup-node@v4`(**`node-version: 20`** 对齐本地;**`cache: 'npm'` + `cache-dependency-path: client/package-lock.json`** —— monorepo 必须显式指定 lock 路径,否则缓存定位错/失效)→ 在 `client/` 里 `npm ci` + `npm run build`(两步都 **`working-directory: client`**,锁定前端目录防跑错根目录)→ `upload-pages-artifact`(path `client/dist`)→ `deploy-pages`。权限 `pages: write` / `id-token: write`,`environment: github-pages`。
+> Node 版本默认用 20(Vite 5 需 ≥18)。若你本地不是 20,告诉我对齐。
 
 **一次性手动设置:** GitHub 仓库 Settings → Pages → Source 选 **GitHub Actions**。之后每次 push main 自动上线。
 
