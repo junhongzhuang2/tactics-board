@@ -4,32 +4,16 @@ import { listBoards, createBoard, deleteBoard, saveBoard } from '../api/boards'
 import { createDefaultBoardData } from '../utils/defaultBoardData'
 
 const STYLES = {
-  page: { maxWidth: 800, margin: '60px auto', padding: '0 24px' },
-  header: {
-    display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 32,
-  },
-  title: { fontSize: 28, fontWeight: 'bold' },
-  createBtn: {
-    padding: '10px 20px', background: '#4a9eff', color: '#fff',
-    border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15,
-  },
-  card: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '16px 20px', background: '#1a1a2e', borderRadius: 10,
-    marginBottom: 12, cursor: 'pointer', border: '1px solid #2a2a4e',
-  },
-  cardName: { fontSize: 17, fontWeight: '500' },
-  cardDate: { fontSize: 12, color: '#888', marginTop: 4 },
-  deleteBtn: {
-    padding: '6px 14px', background: 'transparent', color: '#e57373',
-    border: '1px solid #e57373', borderRadius: 6, cursor: 'pointer', fontSize: 13,
-  },
-  renameBtn: {
-    padding: '6px 14px', background: 'transparent', color: '#ccc',
-    border: '1px solid #555', borderRadius: 6, cursor: 'pointer', fontSize: 13,
-  },
-  empty: { color: '#666', textAlign: 'center', marginTop: 80 },
+  page: { maxWidth: 760, margin: '0 auto', padding: '0 24px 60px' },
+  hero: { textAlign: 'center', padding: '48px 16px 24px' },
+  logo: { fontSize: 40, lineHeight: 1 },
+  title: { fontSize: 26, fontWeight: 800, letterSpacing: 1, margin: '8px 0 4px' },
+  subtitle: { fontSize: 13, fontWeight: 300, opacity: 0.7 },
+  sectionLabel: { textAlign: 'center', fontSize: 11, letterSpacing: 1, opacity: 0.5, margin: '4px 0 16px' },
+  cardName: { fontSize: 16, fontWeight: 500 },
+  cardDate: { fontSize: 12, fontWeight: 300, opacity: 0.6, marginTop: 4 },
+  empty: { textAlign: 'center', color: 'rgba(255,255,255,0.55)', marginTop: 32 },
+  emptyIcon: { fontSize: 32, opacity: 0.5 },
 }
 
 export default function BoardList() {
@@ -64,44 +48,48 @@ export default function BoardList() {
   }
 
   return (
-    <div style={STYLES.page}>
-      <div style={STYLES.header}>
-        <h1 style={STYLES.title}>飞盘战术板</h1>
-        <button style={STYLES.createBtn} onClick={handleCreate}>+ 新建战术板</button>
-      </div>
+    <div className="board-bg">
+      <div style={STYLES.page}>
+        <div style={STYLES.hero}>
+          <div style={STYLES.logo}>🥏</div>
+          <h1 style={STYLES.title}>飞盘战术板</h1>
+          <div style={STYLES.subtitle}>讲解战术 · 复盘跑位</div>
+        </div>
 
-      {boards.length === 0 && (
-        <p style={STYLES.empty}>还没有战术板，点击右上角新建一个</p>
-      )}
+        <div style={STYLES.sectionLabel}>我的战术板</div>
 
-      {boards.map(board => (
-        <div
-          key={board.id}
-          style={STYLES.card}
-          onClick={() => navigate(`/board/${board.id}`)}
-        >
-          <div>
-            <div style={STYLES.cardName}>{board.name}</div>
-            <div style={STYLES.cardDate}>
-              {new Date(board.updated_at).toLocaleString('zh-CN')}
+        <div className="add-card" onClick={handleCreate}>＋ 新建战术板</div>
+
+        {boards.length === 0 && (
+          <div style={STYLES.empty}>
+            <div style={STYLES.emptyIcon}>🥏</div>
+            <p>还没有战术板，点上方新建一个</p>
+          </div>
+        )}
+
+        {boards.map(board => (
+          <div
+            key={board.id}
+            className="board-card"
+            onClick={() => navigate(`/board/${board.id}`)}
+          >
+            <div>
+              <div style={STYLES.cardName}>{board.name}</div>
+              <div style={STYLES.cardDate}>
+                {new Date(board.updated_at).toLocaleString('zh-CN')}
+              </div>
+            </div>
+            <div className="card-actions">
+              <button className="card-btn rename-btn" onClick={(e) => handleRename(e, board)}>
+                重命名
+              </button>
+              <button className="card-btn delete-btn" onClick={(e) => handleDelete(e, board.id)}>
+                删除
+              </button>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              style={STYLES.renameBtn}
-              onClick={(e) => handleRename(e, board)}
-            >
-              重命名
-            </button>
-            <button
-              style={STYLES.deleteBtn}
-              onClick={(e) => handleDelete(e, board.id)}
-            >
-              删除
-            </button>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }

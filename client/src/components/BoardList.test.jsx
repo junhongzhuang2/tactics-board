@@ -38,3 +38,27 @@ test('rename does nothing on cancel, empty, or unchanged name', async () => {
   fireEvent.click(screen.getByText('重命名'))
   expect(api.saveBoard).not.toHaveBeenCalled()
 })
+
+test('empty state shows the add card and a hint', async () => {
+  vi.mocked(api.listBoards).mockResolvedValue([])
+  renderList()
+  expect(await screen.findByText('＋ 新建战术板')).toBeInTheDocument()
+  expect(screen.getByText(/还没有战术板/)).toBeInTheDocument()
+})
+
+test('clicking the add-board card runs create flow', async () => {
+  vi.mocked(api.listBoards).mockResolvedValue([])
+  vi.mocked(api.createBoard).mockResolvedValue({ id: 'new1' })
+  vi.spyOn(window, 'prompt').mockReturnValue('My Board')
+  renderList()
+  fireEvent.click(await screen.findByText('＋ 新建战术板'))
+  await waitFor(() => expect(api.createBoard).toHaveBeenCalled())
+})
+
+test('cards and add-card expose their CSS hooks', async () => {
+  const { container } = renderList()
+  await screen.findByText('Old')
+  expect(container.querySelector('.add-card')).toBeTruthy()
+  expect(container.querySelector('.board-card')).toBeTruthy()
+  expect(container.querySelector('.board-bg')).toBeTruthy()
+})
