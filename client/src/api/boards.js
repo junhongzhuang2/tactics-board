@@ -1,38 +1,44 @@
-const BASE = '/api/boards'
+const KEY = 'tactics-board:boards'
 
-export async function listBoards() {
-  const res = await fetch(BASE)
-  if (!res.ok) throw new Error('Failed to list boards')
-  return res.json()
+function readAll() {
+  try {
+    return JSON.parse(localStorage.getItem(KEY)) ?? []
+  } catch {
+    return []
+  }
 }
 
-export async function createBoard(name, data) {
-  const res = await fetch(BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, data }),
-  })
-  if (!res.ok) throw new Error('Failed to create board')
-  return res.json()
+function writeAll(boards) {
+  localStorage.setItem(KEY, JSON.stringify(boards))
+}
+
+function newId() {
+  return `board-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+function now() {
+  return new Date().toISOString()
+}
+
+export async function listBoards() {
+  return readAll().sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
 }
 
 export async function getBoard(id) {
-  const res = await fetch(`${BASE}/${id}`)
-  if (res.status === 404) return null
-  if (!res.ok) throw new Error('Failed to get board')
-  return res.json()
+  return readAll().find((b) => b.id === id) ?? null
+}
+
+export async function createBoard(name, data) {
+  const board = { id: newId(), name, data, created_at: now(), updated_at: now() }
+  writeAll([...readAll(), board])
+  return board
 }
 
 export async function saveBoard(id, fields) {
-  const res = await fetch(`${BASE}/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(fields),
-  })
-  if (!res.ok) throw new Error('Failed to save board')
+  const boards = readAll().map((b) => (b.id === id ? { ...b, ...fields, updated_at: now() } : b))
+  writeAll(boards)
 }
 
 export async function deleteBoard(id) {
-  const res = await fetch(`${BASE}/${id}`, { method: 'DELETE' })
-  if (!res.ok) throw new Error('Failed to delete board')
+  writeAll(readAll().filter((b) => b.id !== id))
 }
