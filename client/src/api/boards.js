@@ -9,7 +9,11 @@ function readAll() {
 }
 
 function writeAll(boards) {
-  localStorage.setItem(KEY, JSON.stringify(boards))
+  try {
+    localStorage.setItem(KEY, JSON.stringify(boards))
+  } catch {
+    throw new Error('存储空间已满，无法保存战术板数据')
+  }
 }
 
 function newId() {

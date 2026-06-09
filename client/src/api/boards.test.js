@@ -48,3 +48,12 @@ test('localStorage 内容损坏时 listBoards 兜底空数组', async () => {
   localStorage.setItem('tactics-board:boards', '{not json')
   expect(await listBoards()).toEqual([])
 })
+
+test('localStorage 写满时 saveBoard 抛出明确错误（不静默丢数据）', async () => {
+  const b = await createBoard('x', {})
+  const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new DOMException('quota', 'QuotaExceededError')
+  })
+  await expect(saveBoard(b.id, { name: 'y' })).rejects.toThrow(/存储空间/)
+  spy.mockRestore()
+})
