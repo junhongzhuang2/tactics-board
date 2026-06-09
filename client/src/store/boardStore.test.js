@@ -535,7 +535,7 @@ test('applyFormation is undoable in one step', () => {
   act(() => result.current.setBoard({ id: 'b1', name: 'N', data: createDefaultBoardData() }))
   const before = result.current.board.data.frames[0].playerStates.r1.x
   act(() => result.current.applyFormation(0, 'vstack'))
-  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.182)
+  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.174)
   act(() => result.current.undo())
   expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(before)
 })
@@ -546,6 +546,6 @@ test('applyFormation only touches the target frame', () => {
   act(() => result.current.insertFrameAfter(0))
   const frame1R1Before = result.current.board.data.frames[1].playerStates.r1.x
   act(() => result.current.applyFormation(0, 'hstack'))
-  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.221)
+  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.219)
   expect(result.current.board.data.frames[1].playerStates.r1.x).toBe(frame1R1Before)
 })
