@@ -11,9 +11,9 @@
 
 ## 已确认的设计决策
 
-1. **视觉大方向：A 运动球场风**
-   - 背景：深绿对角渐变 `linear-gradient(160deg, #0d3b2e 0%, #15543f 55%, #1d6b4f 100%)`
-   - 草坪线暗纹：横向 `repeating-linear-gradient`，每 ~40px 一条 `rgba(255,255,255,.04)` 细线
+1. **视觉大方向：A 运动球场风 + Pitch Glow 呼吸微光**
+   - 底色：深绿对角渐变 `linear-gradient(160deg, #0d3b2e 0%, #15543f 55%, #1d6b4f 100%)`
+   - **Pitch Glow（呼吸微光）**：放弃密集草坪白线，改用两团大面积径向光晕（`radial-gradient`）模拟球场聚光灯——一团飞盘黄暖光（左上）、一团青绿冷光（右下），各自缓慢明灭/缩放（`@keyframes` breathing，约 7s / 9s，错相位），营造动态呼吸感
    - 主强调色：飞盘黄 `#ffd23f`
 
 2. **顶部 Hero（居中）**
@@ -25,11 +25,13 @@
    - 点击仍调用现有 `handleCreate()` → `prompt()` 流程，逻辑零改动
    - 该虚线卡片**始终存在**（空状态时也在）
 
-4. **战术板卡片升级**
-   - 半透明白底 `rgba(255,255,255,.07)` + 飞盘黄左竖条（`border-left: 4px solid #ffd23f`）+ 圆角
-   - 左侧：名字（粗体）+ 日期（淡色）
-   - 右侧：重命名 + 删除按钮（幽灵按钮样式）
-   - 鼠标悬停：卡片轻微提亮 / 上浮，使用 CSS `transition`
+4. **战术板卡片升级（精致版）**
+   - **毛玻璃**：半透明白底 `rgba(255,255,255,.06)` + `backdrop-filter: blur(10px)`（含 `-webkit-` 前缀），透出底层 Pitch Glow
+   - **隐式边缘高亮**：放弃实心黄竖条，左缘改用内阴影柔光 `box-shadow: inset 6px 0 14px -8px rgba(255,210,63,.9)`，更含蓄
+   - **细字重**：日期、副标题用 `font-weight: 300`；名字保持 `font-weight: 500` 保证可读
+   - 左侧：名字 + 日期；右侧：重命名 + 删除按钮（幽灵按钮）
+   - **交互式浮现**：重命名/删除按钮默认 `opacity: 0.5`，鼠标悬停在卡片上时淡入（`opacity: 1`，`transition`）；悬停按钮本身时变色——重命名→蓝（`#7db4ff` 字 + 蓝底微光）、删除→红（`#ff8a80` 字 + 红底微光）
+   - **卡片悬停**：轻微上浮 `translateY(-2px)` + 提亮 + 投影，`transition`
    - **不显示阵型标签**（如「7v7」）——当前数据模型无阵型字段，不引入
 
 5. **空状态**
@@ -45,12 +47,18 @@
   - 业务函数 `handleCreate` / `handleDelete` / `handleRename` / `useEffect` 加载逻辑保持不变
 
 - **`client/src/index.css`**（当前为空）
-  - 新增少量类用于 hover/transition：如 `.board-card`（卡片提亮上浮）、`.add-card`（虚线卡片 hover 高亮）
-  - 配色用 CSS 变量或直接写值，保持与 STYLES 一致
+  - 承载所有伪元素 / 动画 / hover / backdrop-filter（内联 style 无法表达）：
+    - `@keyframes breatheA` / `breatheB`：Pitch Glow 两团光晕的明灭+缩放
+    - Pitch Glow 用 page 容器的 `::before` / `::after` 绝对定位径向光实现
+    - `.board-card`：毛玻璃 + 隐式边缘高亮 + hover 上浮/提亮
+    - `.board-card .card-actions`：默认 `opacity:.5`，`.board-card:hover .card-actions { opacity:1 }`
+    - `.rename-btn:hover`（蓝）、`.delete-btn:hover`（红）
+    - `.add-card`：虚线卡片 hover 高亮
+  - 静态布局值仍可留在 STYLES 内联对象；动态部分走 class
 
 - **`client/index.html`**
-  - body 背景从 `#1a1a2e` 改为深绿球场渐变 + 草坪线暗纹（让整页背景统一，避免页面外溢区域露出旧色）
-  - 注：草坪线暗纹用固定背景，渐变用 `background-attachment: fixed` 或在 page 容器上铺满
+  - body 背景从 `#1a1a2e` 改为深绿对角渐变（纯渐变兜底，避免页面外溢区域露出旧深蓝）
+  - Pitch Glow 呼吸光晕在 BoardList 的 page 容器内实现（伪元素 + 动画），**不放 body**，便于动画与组件共存
 
 ## 测试影响
 
