@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { useBoardStore } from './boardStore'
+import { createDefaultBoardData } from '../utils/defaultBoardData'
 
 beforeEach(() => {
   useBoardStore.setState({
@@ -509,4 +510,42 @@ test('insertFrameAfter 不让新帧继承 ctrl（避免凭空曲线）', () => {
   act(() => result.current.setTrajectoryCtrl(0, 'player', 'r1', { x: 0.5, y: 0.9 }))
   act(() => result.current.insertFrameAfter(0))
   expect(result.current.board.data.frames[1].playerStates.r1.ctrl).toBeUndefined()
+})
+
+test('applyFormation sets current frame positions, keeps orientation, drops ctrl', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard({ id: 'b1', name: 'N', data: createDefaultBoardData() }))
+  act(() => result.current.updateFramePlayerState(0, 'r1', { orientation: 1.2 }))
+  act(() => result.current.setTrajectoryCtrl(0, 'player', 'r1', { x: 0.4, y: 0.4 }))
+  const pastBefore = result.current.past.length
+
+  act(() => result.current.applyFormation(0, 'default'))
+
+  const f = result.current.board.data.frames[0]
+  expect(f.playerStates.r1.x).toBe(0.15)
+  expect(f.playerStates.r1.y).toBe(0.12)
+  expect(f.playerStates.r1.orientation).toBe(1.2)
+  expect(f.playerStates.r1.ctrl).toBeUndefined()
+  expect(f.discStates['disc-1']).toEqual({ x: 0.162, y: 0.534 })
+  expect(result.current.past.length).toBe(pastBefore + 1)
+})
+
+test('applyFormation is undoable in one step', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard({ id: 'b1', name: 'N', data: createDefaultBoardData() }))
+  const before = result.current.board.data.frames[0].playerStates.r1.x
+  act(() => result.current.applyFormation(0, 'vstack'))
+  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.182)
+  act(() => result.current.undo())
+  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(before)
+})
+
+test('applyFormation only touches the target frame', () => {
+  const { result } = renderHook(() => useBoardStore())
+  act(() => result.current.setBoard({ id: 'b1', name: 'N', data: createDefaultBoardData() }))
+  act(() => result.current.insertFrameAfter(0))
+  const frame1R1Before = result.current.board.data.frames[1].playerStates.r1.x
+  act(() => result.current.applyFormation(0, 'hstack'))
+  expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.221)
+  expect(result.current.board.data.frames[1].playerStates.r1.x).toBe(frame1R1Before)
 })

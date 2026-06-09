@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { frameStartTimes, totalDuration } from '../utils/interpolate'
 import { normalizeBoardData } from '../utils/normalizeBoardData'
+import { buildFormationPatch } from '../utils/formations'
 
 const MIN_DURATION = 100
 const HISTORY_LIMIT = 200
@@ -55,6 +56,28 @@ const useBoardStore = create((set) => ({
       i === frameIndex ? { ...f, discStates: { ...f.discStates, [discId]: { ...f.discStates[discId], ...state } } } : f
     )
     return withHistory(s, { board: { ...s.board, data: { ...s.board.data, frames } }, isDirty: true })
+  }),
+
+  applyFormation: (frameIndex, formationKey) => set((s) => {
+    const data = s.board.data
+    const { playerStates: pPatch, discStates: dPatch } = buildFormationPatch(formationKey, data.players, data.discs)
+    const frames = data.frames.map((f, i) => {
+      if (i !== frameIndex) return f
+      const playerStates = { ...f.playerStates }
+      for (const id in pPatch) {
+        const el = { ...playerStates[id], ...pPatch[id] } // 保留 orientation
+        delete el.ctrl                                    // 位置重置，旧曲线作废
+        playerStates[id] = el
+      }
+      const discStates = { ...f.discStates }
+      for (const id in dPatch) {
+        const el = { ...discStates[id], ...dPatch[id] }
+        delete el.ctrl
+        discStates[id] = el
+      }
+      return { ...f, playerStates, discStates }
+    })
+    return withHistory(s, { board: { ...s.board, data: { ...data, frames } }, isDirty: true })
   }),
 
   setTrajectoryCtrl: (frameIndex, kind, id, ctrl) => set((s) => {
