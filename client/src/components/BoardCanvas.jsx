@@ -14,6 +14,7 @@ import AnnotationLayer from './AnnotationLayer'
 import TrajectoryHandle from './TrajectoryHandle'
 import SelectionToolbar from './SelectionToolbar'
 import CurveToggleButton from './CurveToggleButton'
+import FormationMenu from './FormationMenu'
 import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
 import {
   visibleAnnotations, createArrowAnnotation, createRectAnnotation, createEllipseAnnotation, createTextAnnotation,
@@ -68,7 +69,7 @@ export default function BoardCanvas() {
     board, currentFrameIndex, isDirty, playheadTime, isPlaying, loop,
     past, future, undo, redo,
     updateFramePlayerState, updateFrameDiscState, addDisc, removeDisc, setTrajectoryCtrl,
-    insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration,
+    insertFrameAfter, removeFrame, setCurrentFrame, setFrameDuration, applyFormation,
     setPlayhead, play, pause, toggleLoop, markClean,
     renamePlayer, setPlayerShowCone, renameBoard,
     addAnnotation, removeAnnotation, updateAnnotation, moveAnnotation,
@@ -544,6 +545,16 @@ export default function BoardCanvas() {
           )
         })()}
       </div>
+
+      {/* 底栏：阵型预设 */}
+      {board && (
+        <div style={{
+          padding: '6px 16px', background: '#111', borderTop: '1px solid #333',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <FormationMenu onApply={(key) => applyFormation(editableIndex, key)} disabled={!editable} />
+        </div>
+      )}
 
       {/* 时间轴 */}
       {board && (
