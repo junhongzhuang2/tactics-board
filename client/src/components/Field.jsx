@@ -15,8 +15,12 @@ export default function Field({ fieldWidth, fieldHeight }) {
 
   return (
     <Group listening={false}>
-      {/* 背景（整场同绿，不再有暗色端区块） */}
-      <Rect x={0} y={0} width={w} height={h} fill={FIELD_COLOR} />
+      {/* 背景（整场同绿，不再有暗色端区块）+ 向下柔影，使球场浮在暗场之上 */}
+      <Rect
+        x={0} y={0} width={w} height={h} fill={FIELD_COLOR}
+        shadowColor="#000000" shadowBlur={32}
+        shadowOffset={{ x: 0, y: 12 }} shadowOpacity={0.5}
+      />
 
       {/* 外边框（浅白） */}
       <Rect

@@ -370,7 +370,7 @@ export default function BoardCanvas() {
       </div>
 
       {/* 画布 — containerRef 始终挂载 */}
-      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#0d0d1a' }}>
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'radial-gradient(ellipse at center, #081e16 0%, #040b08 80%)' }}>
         {board && (
           <AnnotationToolbar
             tool={tool}
