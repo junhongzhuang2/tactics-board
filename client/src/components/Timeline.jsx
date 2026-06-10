@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState, useLayoutEffect } from 'react'
 import { totalDuration, durationFromDrag, activeFrameIndex } from '../utils/interpolate'
+import { isFrameModified } from '../utils/frameStatus'
 
 const MIN_BLOCK_PX = 44
 const HANDLE_PX = 6
@@ -7,25 +8,39 @@ const HANDLE_PX = 6
 const STYLES = {
   bar: {
     display: 'flex', alignItems: 'center', gap: 8,
-    padding: '8px 16px', background: '#111', borderTop: '1px solid #333',
+    padding: '8px 16px',
+    background: 'rgba(17,24,20,0.55)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    borderTop: '1px solid rgba(255,255,255,0.08)',
   },
   btn: {
     padding: '0 12px', height: 36, borderRadius: 6,
-    background: '#2a2a3e', border: '1px solid #555',
-    color: '#ccc', cursor: 'pointer', fontSize: 16, lineHeight: 1,
+    fontSize: 16, lineHeight: 1,
   },
-  toggleOn: { background: '#4a9eff', borderColor: '#4a9eff', color: '#fff' },
   track: {
     position: 'relative', flex: 1, height: 36,
     display: 'flex', gap: 2, overflow: 'hidden',
   },
-  frame: (active) => ({
+  frame: {
     position: 'relative', height: 36, borderRadius: 6,
-    background: active ? '#4a9eff' : '#2a2a3e',
-    border: active ? '2px solid #4a9eff' : '2px solid #444',
-    color: '#fff', cursor: 'pointer', fontSize: 13,
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 13,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    userSelect: 'none', flexShrink: 0,
+    userSelect: 'none', flexShrink: 0, boxSizing: 'border-box',
+  },
+  dot: (modified) => ({
+    position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)',
+    width: 5, height: 5, borderRadius: '50%',
+    background: modified ? '#ffd23f' : 'rgba(255,255,255,0.25)',
+    pointerEvents: 'none',
+  }),
+  slider: (left, width) => ({
+    position: 'absolute', top: 0, height: 36, left, width,
+    borderRadius: 6, boxSizing: 'border-box',
+    background: 'rgba(56,189,248,0.15)', border: '2px solid #38bdf8',
+    boxShadow: '0 0 12px rgba(56,189,248,0.3)', pointerEvents: 'none',
+    transition: 'left .25s cubic-bezier(.16,1,.3,1), width .25s cubic-bezier(.16,1,.3,1)',
   }),
   playhead: (leftPct) => ({
     position: 'absolute', top: 0, bottom: 0, left: `${leftPct}%`,
@@ -64,6 +79,28 @@ export default function Timeline({
   const playheadPct = total > 0 ? Math.min(100, (playheadTime / total) * 100) : 0
   const activeIndex = activeFrameIndex(frames, playheadTime)
 
+  const blockRefs = useRef([])
+  blockRefs.current.length = frames.length // 删帧后丢弃末尾失效引用，避免持有已卸载节点
+  const [slider, setSlider] = useState({ left: 0, width: 0 })
+
+  // 切帧 / 帧增删 / 时长变化后重测当前帧块像素位置；measure 定义在 effect 内，
+  // 始终闭包当前 activeIndex，ResizeObserver 回调用的也是这一份（首帧用 layout effect 避免闪烁）
+  useLayoutEffect(() => {
+    function measure() {
+      const track = trackRef.current
+      const el = blockRefs.current[activeIndex]
+      if (!track || !el) return
+      const t = track.getBoundingClientRect()
+      const b = el.getBoundingClientRect()
+      setSlider({ left: b.left - t.left, width: b.width })
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => measure())
+    if (trackRef.current) ro.observe(trackRef.current)
+    return () => ro.disconnect()
+  }, [activeIndex, frames, total])
+
   // Frame block width proportional to duration
   function blockFlex(i) {
     if (i === frames.length - 1) return `0 0 ${MIN_BLOCK_PX}px`
@@ -101,24 +138,28 @@ export default function Timeline({
 
   return (
     <div style={STYLES.bar}>
-      <button style={STYLES.btn} aria-label="上一帧" onClick={() => onStep(-1)}>⏮</button>
+      <button className="ctrl-btn" style={STYLES.btn} aria-label="上一帧" onClick={() => onStep(-1)}>⏮</button>
       {isPlaying ? (
-        <button style={STYLES.btn} aria-label="暂停" onClick={onPause}>⏸</button>
+        <button className="ctrl-btn" style={STYLES.btn} aria-label="暂停" onClick={onPause}>⏸</button>
       ) : (
-        <button style={STYLES.btn} aria-label="播放" onClick={onPlay}>▶</button>
+        <button className="ctrl-btn" style={STYLES.btn} aria-label="播放" onClick={onPlay}>▶</button>
       )}
-      <button style={STYLES.btn} aria-label="下一帧" onClick={() => onStep(1)}>⏭</button>
+      <button className="ctrl-btn" style={STYLES.btn} aria-label="下一帧" onClick={() => onStep(1)}>⏭</button>
       <button
-        style={{ ...STYLES.btn, ...(loop ? STYLES.toggleOn : {}) }}
+        className={`ctrl-btn ${loop ? 'active' : ''}`}
+        style={STYLES.btn}
         aria-label="循环"
         onClick={onToggleLoop}
       >🔁</button>
 
       <div ref={trackRef} style={STYLES.track} onClick={handleTrackClick}>
-        {frames.map((frame, i) => (
+        {frames.map((frame, i) => {
+          const modified = isFrameModified(frame)
+          return (
           <div
             key={frame.id}
-            style={{ ...STYLES.frame(i === activeIndex), flex: blockFlex(i) }}
+            ref={(el) => { blockRefs.current[i] = el }}
+            style={{ ...STYLES.frame, flex: blockFlex(i) }}
             onClick={(e) => { e.stopPropagation(); onJumpToFrame(i) }}
             onContextMenu={(e) => {
               e.preventDefault()
@@ -127,7 +168,11 @@ export default function Timeline({
             title={frames.length > 1 ? '右键删除此帧' : ''}
           >
             {i + 1}
-            {/* Resize handle — not on last frame */}
+            <span
+              data-testid={`frame-dot-${i}`}
+              data-modified={modified ? 'true' : 'false'}
+              style={STYLES.dot(modified)}
+            />
             {i < frames.length - 1 && (
               <div
                 style={STYLES.handle}
@@ -137,7 +182,9 @@ export default function Timeline({
               />
             )}
           </div>
-        ))}
+          )
+        })}
+        <div data-testid="frame-slider" style={STYLES.slider(slider.left, slider.width)} />
         <div style={STYLES.playhead(playheadPct)} />
       </div>
 
@@ -154,7 +201,7 @@ export default function Timeline({
         key={`${currentFrameIndex}-${curDurSec}`}
         onBlur={(e) => onSetDuration(currentFrameIndex, Math.round(parseFloat(e.target.value || '0') * 1000))}
       />
-      <button style={STYLES.btn} aria-label="插入帧" onClick={() => onInsertAfter(currentFrameIndex)}>＋</button>
+      <button className="ctrl-btn" style={STYLES.btn} aria-label="插入帧" onClick={() => onInsertAfter(currentFrameIndex)}>＋</button>
     </div>
   )
 }

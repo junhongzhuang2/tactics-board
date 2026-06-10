@@ -91,3 +91,26 @@ test('duration input commits on change (seconds -> ms)', () => {
   fireEvent.blur(input)
   expect(h.onSetDuration).toHaveBeenCalledWith(0, 2000)
 })
+
+test('改过的帧渲染飞盘黄小点，普通帧渲染浅灰小点', () => {
+  const framesWithStatus = [
+    { id: 'm0', duration: 1000, annotations: [{ id: 'a' }], playerStates: {}, discStates: {} },
+    { id: 'm1', duration: 1000, annotations: [], playerStates: {}, discStates: {} },
+  ]
+  const handlers = {
+    onJumpToFrame: vi.fn(), onPlay: vi.fn(), onPause: vi.fn(), onToggleLoop: vi.fn(),
+    onInsertAfter: vi.fn(), onRemoveFrame: vi.fn(), onSetDuration: vi.fn(), onStep: vi.fn(), onSetPlayhead: vi.fn(),
+  }
+  render(
+    <Timeline frames={framesWithStatus} currentFrameIndex={0} playheadTime={0}
+      isPlaying={false} loop={false} {...handlers} />
+  )
+  expect(screen.getByTestId('frame-dot-0').dataset.modified).toBe('true')
+  expect(screen.getByTestId('frame-dot-1').dataset.modified).toBe('false')
+})
+
+test('渲染当前帧滑块高亮层', () => {
+  // jsdom 下 getBoundingClientRect 全返回 0，滑块测到 left:0/width:0；此处只验证元素存在，像素定位靠浏览器验收
+  setup()
+  expect(screen.getByTestId('frame-slider')).toBeInTheDocument()
+})
