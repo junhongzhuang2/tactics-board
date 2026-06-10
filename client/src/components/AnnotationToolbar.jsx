@@ -14,8 +14,8 @@ const styles = {
   bar: {
     position: 'absolute', top: 12, left: 12, zIndex: 15,
     display: 'flex', alignItems: 'center', gap: 6, padding: 6,
-    background: 'rgba(17,24,20,0.55)',
-    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    // 浮在动画画布之上：不用 backdrop-filter（浏览器每帧重算模糊→播放卡顿），改用近实色深底
+    background: 'rgba(18,26,22,0.9)',
     border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8,
   },
   btn: { padding: '4px 10px', height: 28, borderRadius: 6, fontSize: 13 },

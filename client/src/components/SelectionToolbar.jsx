@@ -1,8 +1,8 @@
 const styles = {
   bar: {
     display: 'flex', alignItems: 'center', gap: 6, padding: 4,
-    background: 'rgba(17,24,20,0.55)',
-    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    // 浮在画布之上：不用 backdrop-filter（每帧重算模糊会拖慢拖拽/播放），改用近实色深底
+    background: 'rgba(18,26,22,0.9)',
     border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8,
   },
   btn: { padding: '3px 8px', height: 24, borderRadius: 5, fontSize: 12 },
