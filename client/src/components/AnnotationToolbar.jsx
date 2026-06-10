@@ -14,14 +14,11 @@ const styles = {
   bar: {
     position: 'absolute', top: 12, left: 12, zIndex: 15,
     display: 'flex', alignItems: 'center', gap: 6, padding: 6,
-    background: '#111', border: '1px solid #333', borderRadius: 8,
+    background: 'rgba(17,24,20,0.55)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8,
   },
-  btn: (active) => ({
-    padding: '4px 10px', height: 28, borderRadius: 6, fontSize: 13, cursor: 'pointer',
-    background: active ? '#4a9eff' : '#2a2a3e',
-    border: active ? '1px solid #4a9eff' : '1px solid #555',
-    color: '#fff',
-  }),
+  btn: { padding: '4px 10px', height: 28, borderRadius: 6, fontSize: 13 },
   sep: { width: 1, height: 20, background: '#444', margin: '0 2px' },
   swatch: (c, active) => ({
     width: 20, height: 20, padding: 0, borderRadius: 4, cursor: 'pointer', background: c,
@@ -35,7 +32,7 @@ export default function AnnotationToolbar({ tool, scope, color, onToolChange, on
   if (collapsed) {
     return (
       <div style={styles.bar}>
-        <button aria-label="展开工具栏" style={styles.btn(false)} onClick={() => setCollapsed(false)}>✎ 标注</button>
+        <button aria-label="展开工具栏" className="ctrl-btn" style={styles.btn} onClick={() => setCollapsed(false)}>✎ 标注</button>
       </div>
     )
   }
@@ -47,15 +44,16 @@ export default function AnnotationToolbar({ tool, scope, color, onToolChange, on
           key={t.key}
           aria-label={t.label}
           aria-pressed={tool === t.key}
-          style={styles.btn(tool === t.key)}
+          className={`ctrl-btn ${tool === t.key ? 'active' : ''}`}
+          style={styles.btn}
           onClick={() => onToolChange(t.key)}
         >
           {t.label}
         </button>
       ))}
       <span style={styles.sep} />
-      <button aria-label="本帧" aria-pressed={scope === 'frame'} style={styles.btn(scope === 'frame')} onClick={() => onScopeChange('frame')}>本帧</button>
-      <button aria-label="全局" aria-pressed={scope === 'global'} style={styles.btn(scope === 'global')} onClick={() => onScopeChange('global')}>全局</button>
+      <button aria-label="本帧" aria-pressed={scope === 'frame'} className={`ctrl-btn ${scope === 'frame' ? 'active' : ''}`} style={styles.btn} onClick={() => onScopeChange('frame')}>本帧</button>
+      <button aria-label="全局" aria-pressed={scope === 'global'} className={`ctrl-btn ${scope === 'global' ? 'active' : ''}`} style={styles.btn} onClick={() => onScopeChange('global')}>全局</button>
       <span style={styles.sep} />
       {ANNO_COLORS.map((c) => (
         <button
@@ -67,7 +65,7 @@ export default function AnnotationToolbar({ tool, scope, color, onToolChange, on
         />
       ))}
       <span style={styles.sep} />
-      <button aria-label="收起工具栏" style={styles.btn(false)} onClick={() => setCollapsed(true)}>«</button>
+      <button aria-label="收起工具栏" className="ctrl-btn" style={styles.btn} onClick={() => setCollapsed(true)}>«</button>
     </div>
   )
 }

@@ -275,16 +275,18 @@ export default function BoardCanvas() {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* 顶栏 */}
       <div style={{
-        padding: '8px 16px', background: '#111',
-        borderBottom: '1px solid #333',
+        padding: '8px 16px',
+        background: 'rgba(17,24,20,0.55)',
+        backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <Link
           to="/"
           title="返回战术板列表"
+          className="ctrl-btn"
           style={{
             padding: '4px 10px', height: 28, borderRadius: 6, lineHeight: '20px',
-            background: '#2a2a3e', border: '1px solid #555', color: '#ccc',
             fontSize: 13, textDecoration: 'none',
           }}
         >
@@ -336,11 +338,9 @@ export default function BoardCanvas() {
             onClick={addDisc}
             disabled={isPlaying}
             title="加一个飞盘"
+            className="ctrl-btn"
             style={{
-              padding: '4px 10px', height: 28, borderRadius: 6,
-              background: '#2a2a3e', border: '1px solid #555', color: '#ccc',
-              fontSize: 13, cursor: isPlaying ? 'default' : 'pointer',
-              opacity: isPlaying ? 0.5 : 1,
+              padding: '4px 10px', height: 28, borderRadius: 6, fontSize: 13,
             }}
           >
             + 盘
@@ -553,7 +553,10 @@ export default function BoardCanvas() {
       {/* 底栏：阵型预设 */}
       {board && (
         <div style={{
-          padding: '6px 16px', background: '#111', borderTop: '1px solid #333',
+          padding: '6px 16px',
+          background: 'rgba(17,24,20,0.55)',
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
           <FormationMenu onApply={(key) => applyFormation(editableIndex, key)} disabled={!editable} />

@@ -7,14 +7,15 @@ const HANDLE_PX = 6
 const STYLES = {
   bar: {
     display: 'flex', alignItems: 'center', gap: 8,
-    padding: '8px 16px', background: '#111', borderTop: '1px solid #333',
+    padding: '8px 16px',
+    background: 'rgba(17,24,20,0.55)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    borderTop: '1px solid rgba(255,255,255,0.08)',
   },
   btn: {
     padding: '0 12px', height: 36, borderRadius: 6,
-    background: '#2a2a3e', border: '1px solid #555',
-    color: '#ccc', cursor: 'pointer', fontSize: 16, lineHeight: 1,
+    fontSize: 16, lineHeight: 1,
   },
-  toggleOn: { background: '#4a9eff', borderColor: '#4a9eff', color: '#fff' },
   track: {
     position: 'relative', flex: 1, height: 36,
     display: 'flex', gap: 2, overflow: 'hidden',
@@ -101,15 +102,16 @@ export default function Timeline({
 
   return (
     <div style={STYLES.bar}>
-      <button style={STYLES.btn} aria-label="上一帧" onClick={() => onStep(-1)}>⏮</button>
+      <button className="ctrl-btn" style={STYLES.btn} aria-label="上一帧" onClick={() => onStep(-1)}>⏮</button>
       {isPlaying ? (
-        <button style={STYLES.btn} aria-label="暂停" onClick={onPause}>⏸</button>
+        <button className="ctrl-btn" style={STYLES.btn} aria-label="暂停" onClick={onPause}>⏸</button>
       ) : (
-        <button style={STYLES.btn} aria-label="播放" onClick={onPlay}>▶</button>
+        <button className="ctrl-btn" style={STYLES.btn} aria-label="播放" onClick={onPlay}>▶</button>
       )}
-      <button style={STYLES.btn} aria-label="下一帧" onClick={() => onStep(1)}>⏭</button>
+      <button className="ctrl-btn" style={STYLES.btn} aria-label="下一帧" onClick={() => onStep(1)}>⏭</button>
       <button
-        style={{ ...STYLES.btn, ...(loop ? STYLES.toggleOn : {}) }}
+        className={`ctrl-btn ${loop ? 'active' : ''}`}
+        style={STYLES.btn}
         aria-label="循环"
         onClick={onToggleLoop}
       >🔁</button>
@@ -154,7 +156,7 @@ export default function Timeline({
         key={`${currentFrameIndex}-${curDurSec}`}
         onBlur={(e) => onSetDuration(currentFrameIndex, Math.round(parseFloat(e.target.value || '0') * 1000))}
       />
-      <button style={STYLES.btn} aria-label="插入帧" onClick={() => onInsertAfter(currentFrameIndex)}>＋</button>
+      <button className="ctrl-btn" style={STYLES.btn} aria-label="插入帧" onClick={() => onInsertAfter(currentFrameIndex)}>＋</button>
     </div>
   )
 }

@@ -113,3 +113,30 @@
   border: 1px solid rgba(255, 255, 255, 0.15); padding: 7px 10px; text-align: left;
 }
 .help-md th { background: rgba(255, 255, 255, 0.06); color: #fff; font-weight: 600; }
+
+/* ── 战术板控制按钮：毛玻璃栏内的「呼吸态」按钮 ── */
+.ctrl-btn {
+  color: rgba(255, 255, 255, 0.6);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.ctrl-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.06);
+}
+.ctrl-btn.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+}
+.ctrl-btn:disabled,
+.ctrl-btn[aria-disabled="true"] {
+  opacity: .45;
+  cursor: default;
+  color: rgba(255, 255, 255, 0.35);
+  background: transparent;
+  box-shadow: none;
+}

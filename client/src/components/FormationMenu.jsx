@@ -2,9 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { FORMATIONS, FORMATION_ORDER } from '../utils/formations'
 
 const TRIGGER = {
-  padding: '4px 12px', height: 28, borderRadius: 6,
-  background: '#2a2a3e', border: '1px solid #555', color: '#ccc',
-  fontSize: 13, cursor: 'pointer',
+  padding: '4px 12px', height: 28, borderRadius: 6, fontSize: 13,
 }
 const MENU = {
   position: 'absolute', bottom: '100%', left: 0, marginBottom: 6,
@@ -48,7 +46,8 @@ export default function FormationMenu({ onApply, disabled }) {
         </div>
       )}
       <button
-        style={{ ...TRIGGER, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}
+        className="ctrl-btn"
+        style={TRIGGER}
         disabled={disabled}
         title={disabled ? '播放中或非关键帧不可用' : '选择阵型预设'}
         onClick={() => { if (!disabled) setOpen((o) => !o) }}
