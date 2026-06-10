@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { frameStartTimes, totalDuration } from '../utils/interpolate'
+import { frameStartTimes, totalDuration, activeFrameIndex } from '../utils/interpolate'
 import { normalizeBoardData } from '../utils/normalizeBoardData'
 import { buildFormationPatch } from '../utils/formations'
 
@@ -238,7 +238,14 @@ const useBoardStore = create((set) => ({
     const playheadTime = (!s.loop && s.playheadTime >= total) ? 0 : s.playheadTime
     return { isPlaying: true, playheadTime }
   }),
-  pause: () => set({ isPlaying: false }),
+  pause: () => set((s) => {
+    // 停下时把选中帧同步到播放头所在帧：播放到末尾后「+插帧」「时长」等应作用于末帧而非开播前的帧
+    if (!s.board) return { isPlaying: false }
+    return {
+      isPlaying: false,
+      currentFrameIndex: activeFrameIndex(s.board.data.frames, s.playheadTime),
+    }
+  }),
   toggleLoop: () => set((s) => ({ loop: !s.loop })),
   setPlayhead: (ms) => set({ playheadTime: ms }),
 

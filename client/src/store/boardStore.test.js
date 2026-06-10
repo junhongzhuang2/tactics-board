@@ -549,3 +549,28 @@ test('applyFormation only touches the target frame', () => {
   expect(result.current.board.data.frames[0].playerStates.r1.x).toBe(0.219)
   expect(result.current.board.data.frames[1].playerStates.r1.x).toBe(frame1R1Before)
 })
+
+test('pause after playing to the end moves currentFrameIndex to the last frame (not the start frame)', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({ id: 'frame-1', duration: 500, playerStates: {}, discStates: {}, annotations: [] })
+  board.data.frames.push({ id: 'frame-2', duration: 500, playerStates: {}, discStates: {}, annotations: [] })
+  act(() => result.current.setBoard(board))
+  act(() => result.current.setCurrentFrame(1))   // 用户点中间帧开始播放
+  act(() => result.current.play())
+  act(() => result.current.setPlayhead(1500))    // 引擎把播放头推到末尾（total = 1000 + 500）
+  act(() => result.current.pause())              // 播放自然结束
+  expect(result.current.currentFrameIndex).toBe(2) // 同步到最后一帧，而非停在中间帧 1
+})
+
+test('pause syncs currentFrameIndex to the playhead even mid-timeline', () => {
+  const { result } = renderHook(() => useBoardStore())
+  const board = makeBoard()
+  board.data.frames.push({ id: 'frame-1', duration: 500, playerStates: {}, discStates: {}, annotations: [] })
+  board.data.frames.push({ id: 'frame-2', duration: 500, playerStates: {}, discStates: {}, annotations: [] })
+  act(() => result.current.setBoard(board))      // currentFrameIndex = 0
+  act(() => result.current.play())
+  act(() => result.current.setPlayhead(1000))    // 播放头停在 frame 1 起点
+  act(() => result.current.pause())
+  expect(result.current.currentFrameIndex).toBe(1)
+})
