@@ -61,3 +61,55 @@
 }
 .rename-btn:hover { color: #7db4ff; border-color: #7db4ff; background: rgba(30, 136, 229, 0.15); }
 .delete-btn:hover { color: #ff8a80; border-color: #ff8a80; background: rgba(229, 57, 53, 0.15); }
+
+/* —— 帮助弹窗 —— */
+.help-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.help-card {
+  position: relative; width: 100%; max-width: 720px; max-height: 80vh; overflow: auto;
+  background: #14161f; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
+  padding: 28px 32px; color: #e6edf3; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: helpScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes helpScaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.help-close {
+  position: absolute; top: 12px; right: 14px; width: 30px; height: 30px;
+  border-radius: 8px; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ccc; font-size: 18px; line-height: 1; cursor: pointer;
+}
+.help-close:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* 暗色 Markdown 排版，仅作用于 .help-md 内 */
+.help-md { font-size: 14px; line-height: 1.7; color: #cfd6e0; }
+.help-md h1 { font-size: 22px; color: #fff; margin: 0 0 12px; }
+.help-md h2 {
+  font-size: 17px; color: #fff; margin: 22px 0 10px;
+  padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+.help-md h3 { font-size: 15px; color: #f0f0f0; margin: 16px 0 8px; }
+.help-md p { margin: 8px 0; }
+.help-md ul, .help-md ol { margin: 8px 0; padding-left: 22px; }
+.help-md li { margin: 4px 0; }
+.help-md strong { color: #fff; font-weight: 700; }
+.help-md a { color: #ffd23f; text-decoration: none; }
+.help-md a:hover { text-decoration: underline; }
+.help-md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.08); padding: 1px 6px; border-radius: 4px;
+}
+.help-md blockquote {
+  margin: 10px 0; padding: 4px 14px;
+  border-left: 3px solid rgba(255, 210, 63, 0.6); color: #b9c2cf; font-style: italic;
+}
+.help-md table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+.help-md th, .help-md td {
+  border: 1px solid rgba(255, 255, 255, 0.15); padding: 7px 10px; text-align: left;
+}
+.help-md th { background: rgba(255, 255, 255, 0.06); color: #fff; font-weight: 600; }
