@@ -15,6 +15,7 @@ import TrajectoryHandle from './TrajectoryHandle'
 import SelectionToolbar from './SelectionToolbar'
 import CurveToggleButton from './CurveToggleButton'
 import FormationMenu from './FormationMenu'
+import HelpButton from './HelpButton'
 import { interpolateAt, getEditableFrameIndex, activeFrameIndex } from '../utils/interpolate'
 import {
   visibleAnnotations, createArrowAnnotation, createRectAnnotation, createEllipseAnnotation, createTextAnnotation,
@@ -363,6 +364,9 @@ export default function BoardCanvas() {
           </span>
         )}
         {!editable && board && <span style={{ fontSize: 12, color: '#f5c518' }}>预览中（停在关键帧才能编辑）</span>}
+        <div style={{ marginLeft: 'auto' }}>
+          <HelpButton />
+        </div>
       </div>
 
       {/* 画布 — containerRef 始终挂载 */}

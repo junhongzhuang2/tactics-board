@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listBoards, createBoard, deleteBoard, saveBoard } from '../api/boards'
 import { createDefaultBoardData } from '../utils/defaultBoardData'
+import HelpButton from './HelpButton'
 
 const STYLES = {
   page: { maxWidth: 760, margin: '0 auto', padding: '0 24px 60px' },
@@ -49,6 +50,9 @@ export default function BoardList() {
 
   return (
     <div className="board-bg">
+      <div style={{ position: 'absolute', top: 16, right: 20, zIndex: 2 }}>
+        <HelpButton />
+      </div>
       <div style={STYLES.page}>
         <div style={STYLES.hero}>
           <div style={STYLES.logo}>🥏</div>
