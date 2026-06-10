@@ -120,7 +120,7 @@
   background: transparent;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: color .15s ease, background .15s ease, box-shadow .15s ease;
+  transition: color .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 .ctrl-btn:hover {
   color: rgba(255, 255, 255, 0.9);
