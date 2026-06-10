@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState, useLayoutEffect } from 'react'
 import { totalDuration, durationFromDrag, activeFrameIndex } from '../utils/interpolate'
+import { isFrameModified } from '../utils/frameStatus'
 
 const MIN_BLOCK_PX = 44
 const HANDLE_PX = 6
@@ -20,13 +21,26 @@ const STYLES = {
     position: 'relative', flex: 1, height: 36,
     display: 'flex', gap: 2, overflow: 'hidden',
   },
-  frame: (active) => ({
+  frame: {
     position: 'relative', height: 36, borderRadius: 6,
-    background: active ? '#4a9eff' : '#2a2a3e',
-    border: active ? '2px solid #4a9eff' : '2px solid #444',
-    color: '#fff', cursor: 'pointer', fontSize: 13,
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 13,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    userSelect: 'none', flexShrink: 0,
+    userSelect: 'none', flexShrink: 0, boxSizing: 'border-box',
+  },
+  dot: (modified) => ({
+    position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)',
+    width: 5, height: 5, borderRadius: '50%',
+    background: modified ? '#ffd23f' : 'rgba(255,255,255,0.25)',
+    pointerEvents: 'none',
+  }),
+  slider: (left, width) => ({
+    position: 'absolute', top: 0, height: 36, left, width,
+    borderRadius: 6, boxSizing: 'border-box',
+    background: 'rgba(56,189,248,0.15)', border: '2px solid #38bdf8',
+    boxShadow: '0 0 12px rgba(56,189,248,0.3)', pointerEvents: 'none',
+    transition: 'left .25s cubic-bezier(.16,1,.3,1), width .25s cubic-bezier(.16,1,.3,1)',
   }),
   playhead: (leftPct) => ({
     position: 'absolute', top: 0, bottom: 0, left: `${leftPct}%`,
@@ -64,6 +78,28 @@ export default function Timeline({
   const total = totalDuration(frames)
   const playheadPct = total > 0 ? Math.min(100, (playheadTime / total) * 100) : 0
   const activeIndex = activeFrameIndex(frames, playheadTime)
+
+  const blockRefs = useRef([])
+  const [slider, setSlider] = useState({ left: 0, width: 0 })
+
+  function measureSlider() {
+    const track = trackRef.current
+    const el = blockRefs.current[activeIndex]
+    if (!track || !el) return
+    const t = track.getBoundingClientRect()
+    const b = el.getBoundingClientRect()
+    setSlider({ left: b.left - t.left, width: b.width })
+  }
+
+  // 切帧 / 帧增删 / 时长变化后重测；首帧用 layout effect 避免闪烁
+  useLayoutEffect(() => {
+    measureSlider()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => measureSlider())
+    if (trackRef.current) ro.observe(trackRef.current)
+    return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, frames, total])
 
   // Frame block width proportional to duration
   function blockFlex(i) {
@@ -120,7 +156,8 @@ export default function Timeline({
         {frames.map((frame, i) => (
           <div
             key={frame.id}
-            style={{ ...STYLES.frame(i === activeIndex), flex: blockFlex(i) }}
+            ref={(el) => { blockRefs.current[i] = el }}
+            style={{ ...STYLES.frame, flex: blockFlex(i) }}
             onClick={(e) => { e.stopPropagation(); onJumpToFrame(i) }}
             onContextMenu={(e) => {
               e.preventDefault()
@@ -129,7 +166,11 @@ export default function Timeline({
             title={frames.length > 1 ? '右键删除此帧' : ''}
           >
             {i + 1}
-            {/* Resize handle — not on last frame */}
+            <span
+              data-testid={`frame-dot-${i}`}
+              data-modified={isFrameModified(frame) ? 'true' : 'false'}
+              style={STYLES.dot(isFrameModified(frame))}
+            />
             {i < frames.length - 1 && (
               <div
                 style={STYLES.handle}
@@ -140,6 +181,7 @@ export default function Timeline({
             )}
           </div>
         ))}
+        <div data-testid="frame-slider" style={STYLES.slider(slider.left, slider.width)} />
         <div style={STYLES.playhead(playheadPct)} />
       </div>
 

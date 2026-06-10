@@ -27,3 +27,10 @@ HTMLCanvasElement.prototype.getContext = () => ({
   rect: () => {},
   clip: () => {},
 })
+
+// jsdom 没有 ResizeObserver；Timeline 滑块测量用到，mock 成空实现
+globalThis.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
