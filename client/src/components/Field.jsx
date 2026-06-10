@@ -15,11 +15,12 @@ export default function Field({ fieldWidth, fieldHeight }) {
 
   return (
     <Group listening={false}>
-      {/* 背景（整场同绿，不再有暗色端区块）+ 向下柔影，使球场浮在暗场之上 */}
+      {/* 背景（整场同绿，不再有暗色端区块）+ 大而柔的向下投影，使球场浮在中心光池之上
+          （在静态 Field 图层，只画一次，不影响播放性能） */}
       <Rect
         x={0} y={0} width={w} height={h} fill={FIELD_COLOR}
-        shadowColor="#000000" shadowBlur={32}
-        shadowOffset={{ x: 0, y: 12 }} shadowOpacity={0.5}
+        shadowColor="#000000" shadowBlur={44}
+        shadowOffset={{ x: 0, y: 20 }} shadowOpacity={0.6}
       />
 
       {/* 外边框（浅白） */}
