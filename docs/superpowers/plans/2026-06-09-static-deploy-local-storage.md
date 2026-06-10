@@ -286,7 +286,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
   1. 合并本分支到 `main` 并 push(由 finishing 流程完成)。
   2. **GitHub 仓库 → Settings → Pages → Build and deployment → Source 选「GitHub Actions」**(只需一次)。
   3. 打开仓库 Actions 标签,看 `Deploy to GitHub Pages` 这次运行变绿。
-  4. 访问 `https://junhongzhuang2.github.io/tactics-board/` → 能新建/画/保存;**刷新 `#/board/xxx` 子页不 404**。
+  4. 访问 `https://frisbee-tactics-board.github.io/tactics-board/` → 能新建/画/保存;**刷新 `#/board/xxx` 子页不 404**。
   > 第 2 步必须你在网页上点一次(我无法代操作);其余 push 后自动。
 
 ---

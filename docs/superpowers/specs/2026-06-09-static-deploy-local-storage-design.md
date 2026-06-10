@@ -9,7 +9,7 @@
 - 路由改 `HashRouter`(GitHub Pages 静态托管下刷新子页不 404)。
 - Vite `base` 设为子路径 `/tactics-board/`(构建时);新增 GitHub Actions 自动部署到 Pages。
 
-**结果:** 别人打开 `junhongzhuang2.github.io/tactics-board/` → 直接画战术板;数据存各自浏览器本地(独立、不共享);分享某战术靠录屏。
+**结果:** 别人打开 `frisbee-tactics-board.github.io/tactics-board/` → 直接画战术板;数据存各自浏览器本地(独立、不共享);分享某战术靠录屏。
 
 **不做(YAGNI / 已确认取舍):** 跨设备/跨人共享数据、实时协作、分享 token、后端/数据库部署。`server/` 目录**保留不删**(以后想做共享版可复用,部署不带它)。本地存储丢失(清缓存/换设备)可接受。
 
@@ -66,7 +66,7 @@ export default defineConfig(({ command }) => ({
 - **无自动化测试**(配置 + 集成,人工冒烟):
   1. 本地 `npm run dev`:新建/画/自动保存、**刷新页面数据还在**(localStorage)、删除、多板列表正常。
   2. `npm run build` 成功;`npm run preview` 在 `/tactics-board/` 子路径下资源正常。
-  3. push 后 Actions 绿、访问 `junhongzhuang2.github.io/tactics-board/` 能用、刷新子页不 404。
+  3. push 后 Actions 绿、访问 `frisbee-tactics-board.github.io/tactics-board/` 能用、刷新子页不 404。
 
 ## 7. 文件清单
 

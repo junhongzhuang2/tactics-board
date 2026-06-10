@@ -10,6 +10,13 @@ node_modules/
 dist/
 build/
 
+# Vite cache
+.vite/
+client/.vite/
+
+# Local screenshots / scratch images
+pictures/
+
 # Logs
 *.log
 npm-debug.log*
