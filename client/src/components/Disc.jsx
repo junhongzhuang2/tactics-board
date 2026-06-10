@@ -34,7 +34,11 @@ function Disc({
       onClick={(e) => { e.cancelBubble = true; onSelect?.(discId) }}
       onTap={(e) => { e.cancelBubble = true; onSelect?.(discId) }}
     >
-      <Circle radius={DISC_RADIUS} fill="#f5c518" stroke="#c8a000" strokeWidth={2} />
+      <Circle
+        radius={DISC_RADIUS} fill="#f5c518" stroke="#c8a000" strokeWidth={2}
+        shadowColor="black" shadowBlur={8}
+        shadowOffset={{ x: 2, y: 5 }} shadowOpacity={0.4}
+      />
       <Circle radius={DISC_RADIUS * 0.55} fill="transparent" stroke="#c8a000" strokeWidth={1.5} />
     </Group>
   )

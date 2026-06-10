@@ -4,9 +4,9 @@ import { toCanvas, toNorm, clampToField } from '../utils/coords'
 import ViewCone from './ViewCone'
 import RotateHandle from './RotateHandle'
 
-const TEAM_COLORS = { red: '#e53935', blue: '#1e88e5' }
+const TEAM_COLORS = { red: '#ef4444', blue: '#3b82f6' }
 const PLAYER_RADIUS = 18
-const FONT_SIZE = 13
+const FONT_SIZE = 11
 
 export default function Player({
   player,           // { id, team, number, name, showCone }
@@ -49,7 +49,7 @@ export default function Player({
         text={label}
         fontSize={FONT_SIZE}
         fill="#fff"
-        fontStyle="bold"
+        fontStyle="500"
         width={PLAYER_RADIUS * 2}
         height={PLAYER_RADIUS * 2}
         x={-PLAYER_RADIUS}
