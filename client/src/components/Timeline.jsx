@@ -80,25 +80,25 @@ export default function Timeline({
   const activeIndex = activeFrameIndex(frames, playheadTime)
 
   const blockRefs = useRef([])
+  blockRefs.current.length = frames.length // 删帧后丢弃末尾失效引用，避免持有已卸载节点
   const [slider, setSlider] = useState({ left: 0, width: 0 })
 
-  function measureSlider() {
-    const track = trackRef.current
-    const el = blockRefs.current[activeIndex]
-    if (!track || !el) return
-    const t = track.getBoundingClientRect()
-    const b = el.getBoundingClientRect()
-    setSlider({ left: b.left - t.left, width: b.width })
-  }
-
-  // 切帧 / 帧增删 / 时长变化后重测；首帧用 layout effect 避免闪烁
+  // 切帧 / 帧增删 / 时长变化后重测当前帧块像素位置；measure 定义在 effect 内，
+  // 始终闭包当前 activeIndex，ResizeObserver 回调用的也是这一份（首帧用 layout effect 避免闪烁）
   useLayoutEffect(() => {
-    measureSlider()
+    function measure() {
+      const track = trackRef.current
+      const el = blockRefs.current[activeIndex]
+      if (!track || !el) return
+      const t = track.getBoundingClientRect()
+      const b = el.getBoundingClientRect()
+      setSlider({ left: b.left - t.left, width: b.width })
+    }
+    measure()
     if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(() => measureSlider())
+    const ro = new ResizeObserver(() => measure())
     if (trackRef.current) ro.observe(trackRef.current)
     return () => ro.disconnect()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, frames, total])
 
   // Frame block width proportional to duration
@@ -153,7 +153,9 @@ export default function Timeline({
       >🔁</button>
 
       <div ref={trackRef} style={STYLES.track} onClick={handleTrackClick}>
-        {frames.map((frame, i) => (
+        {frames.map((frame, i) => {
+          const modified = isFrameModified(frame)
+          return (
           <div
             key={frame.id}
             ref={(el) => { blockRefs.current[i] = el }}
@@ -168,8 +170,8 @@ export default function Timeline({
             {i + 1}
             <span
               data-testid={`frame-dot-${i}`}
-              data-modified={isFrameModified(frame) ? 'true' : 'false'}
-              style={STYLES.dot(isFrameModified(frame))}
+              data-modified={modified ? 'true' : 'false'}
+              style={STYLES.dot(modified)}
             />
             {i < frames.length - 1 && (
               <div
@@ -180,7 +182,8 @@ export default function Timeline({
               />
             )}
           </div>
-        ))}
+          )
+        })}
         <div data-testid="frame-slider" style={STYLES.slider(slider.left, slider.width)} />
         <div style={STYLES.playhead(playheadPct)} />
       </div>

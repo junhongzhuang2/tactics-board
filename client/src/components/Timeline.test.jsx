@@ -110,6 +110,7 @@ test('改过的帧渲染飞盘黄小点，普通帧渲染浅灰小点', () => {
 })
 
 test('渲染当前帧滑块高亮层', () => {
+  // jsdom 下 getBoundingClientRect 全返回 0，滑块测到 left:0/width:0；此处只验证元素存在，像素定位靠浏览器验收
   setup()
   expect(screen.getByTestId('frame-slider')).toBeInTheDocument()
 })
