@@ -1,14 +1,11 @@
 const styles = {
   bar: {
     display: 'flex', alignItems: 'center', gap: 6, padding: 4,
-    background: '#111', border: '1px solid #333', borderRadius: 8,
+    background: 'rgba(17,24,20,0.55)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8,
   },
-  btn: (active) => ({
-    padding: '3px 8px', height: 24, borderRadius: 5, fontSize: 12, cursor: 'pointer',
-    background: active ? '#4a9eff' : '#2a2a3e',
-    border: active ? '1px solid #4a9eff' : '1px solid #555',
-    color: '#fff',
-  }),
+  btn: { padding: '3px 8px', height: 24, borderRadius: 5, fontSize: 12 },
   del: {
     padding: '3px 8px', height: 24, borderRadius: 5, fontSize: 12, cursor: 'pointer',
     background: 'transparent', color: '#e57373', border: '1px solid #e57373',
@@ -25,7 +22,8 @@ export default function SelectionToolbar({ scope, canMoveToFrame, onSetScope, on
         aria-pressed={scope === 'frame'}
         disabled={scope === 'global' && !canMoveToFrame}
         title={scope === 'global' && !canMoveToFrame ? '停在关键帧才能转为本帧' : undefined}
-        style={styles.btn(scope === 'frame')}
+        className={`ctrl-btn ${scope === 'frame' ? 'active' : ''}`}
+        style={styles.btn}
         onClick={() => onSetScope('frame')}
       >
         本帧
@@ -33,7 +31,8 @@ export default function SelectionToolbar({ scope, canMoveToFrame, onSetScope, on
       <button
         aria-label="全局"
         aria-pressed={scope === 'global'}
-        style={styles.btn(scope === 'global')}
+        className={`ctrl-btn ${scope === 'global' ? 'active' : ''}`}
+        style={styles.btn}
         onClick={() => onSetScope('global')}
       >
         全局

@@ -357,7 +357,8 @@ export default function BoardCanvas() {
             ⚠ 保存失败，重试中
             <button
               onClick={retryNow}
-              style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: '#2a2a3e', border: '1px solid #555', color: '#ccc', cursor: 'pointer' }}
+              className="ctrl-btn"
+              style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4 }}
             >
               立即重试
             </button>
