@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import guide from '../usage-guide.md?raw'
@@ -28,7 +29,9 @@ export default function HelpButton() {
       <button style={BTN} aria-label="帮助" title="使用帮助" onClick={() => setOpen(true)}>
         ? 帮助
       </button>
-      {open && (
+      {open && createPortal(
+        // portal 到 body：顶栏的 backdrop-filter 会成为 fixed 后代的 containing block，
+        // 不 portal 出去，遮罩就被困在顶栏那条窄带里、被画布盖住
         <div
           className="help-overlay"
           role="dialog"
@@ -42,7 +45,8 @@ export default function HelpButton() {
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{guide}</ReactMarkdown>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

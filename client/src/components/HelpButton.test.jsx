@@ -16,12 +16,19 @@ test('closes on the × button', () => {
 })
 
 test('closes on overlay click but not on card click', () => {
-  const { container } = render(<HelpButton />)
+  render(<HelpButton />)
   fireEvent.click(screen.getByText('? 帮助'))
-  fireEvent.click(container.querySelector('.help-card')) // 点卡片不关
+  fireEvent.click(document.querySelector('.help-card')) // 点卡片不关
   expect(screen.getByText(/使用指南/)).toBeInTheDocument()
-  fireEvent.click(container.querySelector('.help-overlay')) // 点遮罩关
+  fireEvent.click(document.querySelector('.help-overlay')) // 点遮罩关
   expect(screen.queryByText(/使用指南/)).not.toBeInTheDocument()
+})
+
+test('modal portals to document.body (escapes 顶栏 backdrop-filter 形成的定位容器)', () => {
+  render(<HelpButton />)
+  fireEvent.click(screen.getByText('? 帮助'))
+  // 顶栏的 backdrop-filter 会成为 fixed 后代的 containing block；portal 到 body 才能铺满视口
+  expect(screen.getByRole('dialog').parentElement).toBe(document.body)
 })
 
 test('closes on Escape', () => {
